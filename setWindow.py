@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import Canvas
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 
 
 class MainWindow:
@@ -10,6 +10,7 @@ class MainWindow:
         self.window.geometry('750x650')
         self.file_path = ""
         self.point_list = []
+        self.input_case_list = []
 
         # basic setting
         # read file part
@@ -49,7 +50,7 @@ class MainWindow:
         self.__file_choose_btn.grid(column=1, row=0, padx=pad)
         self.__enter_btn.grid(column=2, row=0, padx=pad)
 
-        self.__file_path_msg.insert('end', 'Hello World')
+        self.__file_path_msg.insert('end', 'Please choose a input file')
 
         # place the canvas part
         self.__canvas_frame.grid(
@@ -69,10 +70,11 @@ class MainWindow:
         self.__file_path_msg.insert('end', self.file_path)
 
     def __enter_file(self):
-        self.__clear_graph()
         if not self.file_path:
-            print("Please choose the file first.")
+            messagebox.showerror(
+                title="Read File Error", message="Please choose the file.")
         else:
+            self.__clear_graph()
             print("Deal with the input file.")
             self.__input_preprocess()
             self.file_path = ""
