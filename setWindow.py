@@ -4,10 +4,10 @@ from tkinter import filedialog, messagebox
 
 
 class MainWindow:
-    def __init__(self):
+    def __init__(self):  
         self.window = tk.Tk()
         self.window.title('Voronoi Diagram')
-        self.window.geometry('750x650')
+        # self.window.geometry('750x650')
         self.file_path = ""
         self.point_list = []
         self.input_case_list = []
@@ -81,6 +81,28 @@ class MainWindow:
 
     def __input_preprocess(self):
         print(self.file_path)
+        point_num = 0
+        with open(self.file_path, 'r') as f:
+            for line in f:
+                if(len(line.split()) == 1):
+                    point_num = int(line.split()[0])
+                    continue
+                if(point_num):   
+                    tmp_list = list()
+                    tmp_list.append(int(line.split()[0]))
+                    tmp_list.append(int(line.split()[1]))
+                    self.point_list.append(tmp_list.copy())
+                    point_num -= 1
+                if(not point_num):
+                    self.input_case_list.append(self.point_list.copy())
+                    self.point_list.clear()
+        self.__point_init()
+        self.__file_path_msg.delete('1.0', 'end')
+        self.__file_path_msg.insert('end', 'File read successfully')
+
+    def __point_init(self):
+        print(self.point_list)
+        
 
     def __add_point(self, event):
         x1, y1 = (event.x - 3), (event.y - 3)
