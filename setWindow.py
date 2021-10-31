@@ -101,8 +101,13 @@ class MainWindow:
         self.__file_path_msg.insert('end', 'File read successfully')
 
     def __point_init(self):
+        self.point_list = self.input_case_list[0]
+        del self.input_case_list[0]
         print(self.point_list)
-        
+        for point in self.point_list:
+            x1, y1 = (point[0] - 3), (point[1] - 3)
+            x2, y2 = (point[0] + 3), (point[1] + 3)
+            self.__graph.create_oval(x1, y1, x2, y2, fill='black')
 
     def __add_point(self, event):
         x1, y1 = (event.x - 3), (event.y - 3)
