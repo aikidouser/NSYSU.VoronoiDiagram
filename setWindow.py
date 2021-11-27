@@ -1,10 +1,11 @@
 import tkinter as tk
 from tkinter import Canvas
 from tkinter import filedialog, messagebox
+from VDAlgo import VoronoiDiagram
 
 
 class MainWindow:
-    def __init__(self):  
+    def __init__(self):
         self.window = tk.Tk()
         self.window.title('Voronoi Diagram')
         # self.window.geometry('750x650')
@@ -27,7 +28,7 @@ class MainWindow:
             self.window, width=600, height=600, bg='orange')
         self.__graph = Canvas(self.__canvas_frame,
                               width=600, height=600, bg='white')
-        self.__graph.bind("<Button-1>", self.__add_point)
+        self.__graph.bind("<Button-1>", self.__draw_point)
 
         # exe part
         self.__output_btn_frame = tk.Frame(self.window, width=130, height=600)
@@ -84,10 +85,12 @@ class MainWindow:
         point_num = 0
         with open(self.file_path, 'r') as f:
             for line in f:
+                if "#" in line:
+                    continue
                 if(len(line.split()) == 1):
                     point_num = int(line.split()[0])
                     continue
-                if(point_num):   
+                if(point_num):
                     tmp_list = list()
                     tmp_list.append(int(line.split()[0]))
                     tmp_list.append(int(line.split()[1]))
@@ -109,7 +112,7 @@ class MainWindow:
             x2, y2 = (point[0] + 3), (point[1] + 3)
             self.__graph.create_oval(x1, y1, x2, y2, fill='black')
 
-    def __add_point(self, event):
+    def __draw_point(self, event):
         x1, y1 = (event.x - 3), (event.y - 3)
         x2, y2 = (event.x + 3), (event.y + 3)
         tmp_list = [event.x, event.y]
@@ -127,10 +130,3 @@ class MainWindow:
         print("the final output")
         for i in self.point_list:
             print(i)
-
-
-if __name__ == '__main__':
-
-    VDWindow = MainWindow()
-
-    VDWindow.window.mainloop()
