@@ -125,8 +125,22 @@ class MainWindow:
 
     def __step_by_step(self):
         print("press one time show one step.")
+        self.__run()
+
 
     def __run_to_end(self):
         print("the final output")
-        for i in self.point_list:
-            print(i)
+        self.__run()
+
+    def __run(self):
+        self.vd = VoronoiDiagram(self.point_list)
+        print(self.point_list)
+
+        print(f"num of line: {len(self.vd.polyedge_list)}")
+        self.__graph.create_line(*self.vd.polyedge_list[0], fill='blue')
+        self.__graph.create_line(*self.vd.polyedge_list[1], fill='red')
+        self.__graph.create_line(*self.vd.polyedge_list[2], fill='yellow')
+
+
+        # for line in self.vd.polyedge_list:
+        #     self.__graph.create_line(*line, color=)
