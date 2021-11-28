@@ -1,3 +1,4 @@
+import math
 from shapely import geometry as geo
 
 class VoronoiDiagram:
@@ -66,13 +67,22 @@ class VoronoiDiagram:
             self.polyedge_list.append(hyperplane)
 
     
-    def __3p_force(self, t_point_list):
-        t_point_list.sort()
-
+    def __3p_force(self, points):
+        points.sort()
         if_out = False
-        l_ppdc = self.__perpendicular(t_point_list[0], t_point_list[1])
-        r_ppdc = self.__perpendicular(t_point_list[1], t_point_list[2])
-        m_ppdc = self.__perpendicular(t_point_list[2], t_point_list[0])
+        if_exists = False
+        s_point = 0
+        dis_list = list()
+
+        for i in range(len(points)):
+            dis_list.append(math.dist(points[i], points[(i+1)%3]))
+        
+        s_point = (dis_list.index(max(dis_list)) + 1) % 3
+        print(s_point, dis_list)
+
+        
+        l_ppdc = self.__perpendicular(points[s_point], points[(s_point + 1) % 3])
+        r_ppdc = self.__perpendicular(points[(s_point + 1) % 3], points[(s_point + 2) % 3])
         inters = self.__line_intersection(l_ppdc, r_ppdc)
 
         def check(inters, line, point_list, type=0):
@@ -87,25 +97,27 @@ class VoronoiDiagram:
                 return line_part1 if not iters1 else line_part2
 
         if inters:
-            l_ppdc = check(inters, l_ppdc, [t_point_list[0], t_point_list[1]])
-            r_ppdc = check(inters, r_ppdc, [t_point_list[1], t_point_list[2]])
+            if_exists = True
+            l_ppdc = check(inters, l_ppdc, [points[s_point], points[(s_point + 1) % 3]])
+            r_ppdc = check(inters, r_ppdc, [points[(s_point + 1) % 3], points[(s_point + 2) % 3]])
+            m_ppdc = self.__perpendicular(points[s_point], points[(s_point - 1) % 3])
             
-            if self.__line_intersection(l_ppdc, [t_point_list[0], t_point_list[2]]):
+            if self.__line_intersection(l_ppdc, [points[s_point], points[(s_point - 1) % 3]]):
                 if_out = True
             
             if not if_out:
-                m_ppdc = check(inters, m_ppdc, [t_point_list[2], t_point_list[0]])
-            
+                m_ppdc = check(inters, m_ppdc, [points[s_point], points[(s_point - 1) % 3]])
             else:
-                m_ppdc = check(inters, m_ppdc, [t_point_list[2], t_point_list[0]], 1)
+                m_ppdc = check(inters, m_ppdc, [points[s_point], points[(s_point - 1) % 3]], 1)
                 
 
         self.polyedge_list.append(l_ppdc)
-        self.polypoints_list.append([t_point_list[0], t_point_list[1]])
+        self.polypoints_list.append([points[s_point], points[(s_point + 1) % 3]])
         self.polyedge_list.append(r_ppdc)
-        self.polypoints_list.append([t_point_list[1], t_point_list[2]])
-        self.polyedge_list.append(m_ppdc)
-        self.polypoints_list.append([t_point_list[2], t_point_list[0]])
+        self.polypoints_list.append([points[(s_point + 1) % 3], points[(s_point + 2) % 3]])
+        if if_exists:
+            self.polyedge_list.append(m_ppdc)
+            self.polypoints_list.append([points[s_point], points[(s_point - 1) % 3]])
 
 
     def __perpendicular(self, a, b):
@@ -156,6 +168,6 @@ class VoronoiDiagram:
 
 
 if __name__ == '__main__':
-    point_list = [[3, 8], [5, 4], [1, 6], [2, 3]]
+    point_list = [[3, 8], [5, 4], [1, 6]]
     vd = VoronoiDiagram(point_list)
     print(vd.point_list)
