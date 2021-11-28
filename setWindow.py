@@ -32,6 +32,8 @@ class MainWindow:
 
         # exe part
         self.__output_btn_frame = tk.Frame(self.window, width=130, height=600)
+        self.__next_btn = tk.Button(
+            self.__output_btn_frame, text="Next Case", width=15, height=3)
         self.__clear_btn = tk.Button(
             self.__output_btn_frame, text="Clear", command=self.__clear_graph, width=15, height=3)
         self.__sts_btn = tk.Button(
@@ -61,7 +63,8 @@ class MainWindow:
         # place the exe button part
         self.__output_btn_frame.grid(
             column=1, row=1, padx=pad, pady=pad, sticky=tk.W + tk.N)
-        self.__clear_btn.grid(column=0, row=0, padx=2 * pad, pady=2 * pad)
+        self.__clear_btn.grid(column=0, row=0,
+                              padx=2 * pad, pady=2 * pad)
         self.__sts_btn.grid(column=0, row=1, pady=2 * pad)
         self.__run_btn.grid(column=0, row=2, pady=2 * pad)
 
@@ -94,7 +97,8 @@ class MainWindow:
                     tmp_list = list()
                     tmp_list.append(int(line.split()[0]))
                     tmp_list.append(int(line.split()[1]))
-                    self.point_list.append(tmp_list.copy())
+                    if tmp_list not in self.points:
+                        self.point_list.append(tmp_list.copy())
                     point_num -= 1
                 if(not point_num):
                     self.input_case_list.append(self.point_list.copy())
@@ -116,8 +120,12 @@ class MainWindow:
         x1, y1 = (event.x - 3), (event.y - 3)
         x2, y2 = (event.x + 3), (event.y + 3)
         tmp_list = [event.x, event.y]
-        self.point_list.append(tmp_list)
+        if tmp_list not in self.point_list:
+            self.point_list.append(tmp_list)
         self.__graph.create_oval(x1, y1, x2, y2, fill='black')
+
+    # TODO:
+    # def __next_case(self):
 
     def __clear_graph(self):
         self.point_list.clear()
@@ -127,7 +135,6 @@ class MainWindow:
         print("press one time show one step.")
         self.__run()
 
-
     def __run_to_end(self):
         print("the final output")
         self.__run()
@@ -136,11 +143,11 @@ class MainWindow:
         self.vd = VoronoiDiagram(self.point_list)
         print(self.point_list)
 
+        # TODO: Draw Line
         print(f"num of line: {len(self.vd.polyedge_list)}")
         self.__graph.create_line(*self.vd.polyedge_list[0], fill='blue')
         self.__graph.create_line(*self.vd.polyedge_list[1], fill='red')
         self.__graph.create_line(*self.vd.polyedge_list[2], fill='yellow')
-
 
         # for line in self.vd.polyedge_list:
         #     self.__graph.create_line(*line, color=)
