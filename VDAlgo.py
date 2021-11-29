@@ -14,7 +14,7 @@ class VoronoiDiagram:
         print("Start")
 
         if len(self.point_list) == 1:
-            temp_dict = {'points': self.point_list}
+            temp_dict = {'points': self.point_list, 'edge': [[-1, -1], [-1, 1]]}
             self.record.append(temp_dict)
 
         elif len(self.point_list) == 2:
@@ -27,7 +27,6 @@ class VoronoiDiagram:
 
         elif len(self.point_list) == 3:
             self.__3p_force(self.point_list)
-
 
     def __garbage(self, t_point_list):
         # This can only be used in the case of three points.
@@ -74,7 +73,6 @@ class VoronoiDiagram:
 
             self.polyedge_list.append(hyperplane)
 
-    
     def __3p_force(self, points):
         points.sort()
         if_out = False

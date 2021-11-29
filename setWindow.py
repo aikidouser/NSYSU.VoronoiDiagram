@@ -1,3 +1,4 @@
+from os import write
 import tkinter as tk
 from tkinter import Canvas
 from tkinter import filedialog, messagebox
@@ -46,6 +47,8 @@ class MainWindow:
             self.__output_btn_frame, text='Step by Step', command=self.__step_by_step, width=15, height=3)
         self.__run_btn = tk.Button(
             self.__output_btn_frame, text='Run', command=self.__run_to_end, width=15, height=3)
+        self.__write_btn = tk.Button(
+            self.__output_btn_frame, text='Output Txt', command=self.__output_file, width=15, height=3)
 
         self.__place_obj()
 
@@ -69,10 +72,11 @@ class MainWindow:
         # place the exe button part
         self.__output_btn_frame.grid(
             column=1, row=1, padx=pad, pady=pad, sticky=tk.W + tk.N)
-        self.__next_btn.grid(column=0, row=0, padx=2 * pad, pady=2*pad)
+        self.__next_btn.grid(column=0, row=0, padx=2 * pad, pady=2 * pad)
         self.__clear_btn.grid(column=0, row=1, padx=2 * pad, pady=2 * pad)
-        self.__sts_btn.grid(column=0, row=2, pady=2 * pad)
-        self.__run_btn.grid(column=0, row=3, pady=2 * pad)
+        self.__sts_btn.grid(column=0, row=2, padx=2 * pad, pady=2 * pad)
+        self.__run_btn.grid(column=0, row=3, padx=2 * pad, pady=2 * pad)
+        self.__write_btn.grid(column=0, row=4, sticky=tk.S, padx=2 * pad, pady=8 * pad)
 
     def __choose_file(self):
         self.__file_path_msg.delete('1.0', 'end')
@@ -131,7 +135,6 @@ class MainWindow:
             self.point_list.append(tmp_list)
         self.__graph.create_oval(x1, y1, x2, y2, fill='black')
 
-    # TODO:
     def __next_case(self):
         print(f"case: {self.__case_i}/{len(self.input_case_list)}")
         if len(self.input_case_list):
@@ -180,3 +183,19 @@ class MainWindow:
     def __run(self):
         self.vd = VoronoiDiagram(self.point_list)
         print(self.point_list)
+
+    def __output_file(self):
+        file_path = str(self.__case_i) + '.out'
+        wb_edge = self.vd.polyedge_list.copy()
+        wb_point = sorted(self.point_list)
+
+        for edge in wb_edge:
+            edge.sort()
+        wb_edge.sort()
+
+        with open(file_path, 'w') as f:
+            for point in wb_point:
+                f.write(f'P {point[0]} {point[1]}\n')
+            for edge in wb_edge:
+                f.write(f'E {edge[0][0]} {edge[0][1]} {edge[1][0]} {edge[1][1]}\n')
+
