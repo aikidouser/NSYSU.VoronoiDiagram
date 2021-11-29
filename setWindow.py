@@ -11,7 +11,13 @@ class MainWindow:
         # self.window.geometry('750x650')
         self.file_path = ""
         self.point_list = []
+        self.__case_i = 0
         self.input_case_list = []
+
+        # Step by Step
+        self.__if_finished = False
+        self.__step_i = 0
+        self.__draw_point_set = list()
 
         # basic setting
         # read file part
@@ -33,7 +39,7 @@ class MainWindow:
         # exe part
         self.__output_btn_frame = tk.Frame(self.window, width=130, height=600)
         self.__next_btn = tk.Button(
-            self.__output_btn_frame, text="Next Case", width=15, height=3)
+            self.__output_btn_frame, text="Next Case", command=self.__next_case, width=15, height=3)
         self.__clear_btn = tk.Button(
             self.__output_btn_frame, text="Clear", command=self.__clear_graph, width=15, height=3)
         self.__sts_btn = tk.Button(
@@ -63,10 +69,10 @@ class MainWindow:
         # place the exe button part
         self.__output_btn_frame.grid(
             column=1, row=1, padx=pad, pady=pad, sticky=tk.W + tk.N)
-        self.__clear_btn.grid(column=0, row=0,
-                              padx=2 * pad, pady=2 * pad)
-        self.__sts_btn.grid(column=0, row=1, pady=2 * pad)
-        self.__run_btn.grid(column=0, row=2, pady=2 * pad)
+        self.__next_btn.grid(column=0, row=0, padx=2 * pad, pady=2*pad)
+        self.__clear_btn.grid(column=0, row=1, padx=2 * pad, pady=2 * pad)
+        self.__sts_btn.grid(column=0, row=2, pady=2 * pad)
+        self.__run_btn.grid(column=0, row=3, pady=2 * pad)
 
     def __choose_file(self):
         self.__file_path_msg.delete('1.0', 'end')
@@ -74,12 +80,13 @@ class MainWindow:
         self.__file_path_msg.insert('end', self.file_path)
 
     def __enter_file(self):
+        self.__case_i = 0
         if not self.file_path:
             messagebox.showerror(
                 title="Read File Error", message="Please choose the file.")
         else:
             self.__clear_graph()
-            print("Deal with the input file.")
+            self.input_case_list.clear()
             self.__input_preprocess()
             self.file_path = ""
 
@@ -97,7 +104,7 @@ class MainWindow:
                     tmp_list = list()
                     tmp_list.append(int(line.split()[0]))
                     tmp_list.append(int(line.split()[1]))
-                    if tmp_list not in self.points:
+                    if tmp_list not in self.point_list:
                         self.point_list.append(tmp_list.copy())
                     point_num -= 1
                 if(not point_num):
@@ -108,8 +115,8 @@ class MainWindow:
         self.__file_path_msg.insert('end', 'File read successfully')
 
     def __point_init(self):
-        self.point_list = self.input_case_list[0]
-        del self.input_case_list[0]
+        self.point_list = self.input_case_list[self.__case_i]
+        # del self.input_case_list[0]
         print(self.point_list)
         for point in self.point_list:
             x1, y1 = (point[0] - 3), (point[1] - 3)
@@ -125,29 +132,51 @@ class MainWindow:
         self.__graph.create_oval(x1, y1, x2, y2, fill='black')
 
     # TODO:
-    # def __next_case(self):
+    def __next_case(self):
+        print(f"case: {self.__case_i}/{len(self.input_case_list)}")
+        if len(self.input_case_list):
+            self.__clear_graph()
+            self.__case_i += 1
+            self.__case_i %= len(self.input_case_list)
+            print("test: ", self.input_case_list[self.__case_i])
+            self.__point_init()
+        else:
+            messagebox.showerror(
+                title="Read File Error", message="Please choose the file.")
 
     def __clear_graph(self):
         self.point_list.clear()
         self.__graph.delete('all')
+        self.__if_finished = False
+        self.__step_i = 0
 
     def __step_by_step(self):
         print("press one time show one step.")
-        self.__run()
+        for point in self.__draw_point_set:
+            self.__graph.delete(point)
+        self.__draw_point_set.clear()
+
+        if not self.__if_finished:
+            self.__run()
+        
+        if self.__step_i >= len(self.vd.record):
+            return
+
+        for point in self.vd.record[self.__step_i]['points']:
+            x1, y1 = (point[0] - 5), (point[1] - 5)
+            x2, y2 = (point[0] + 5), (point[1] + 5)
+            self.__draw_point_set.append(self.__graph.create_oval(x1, y1, x2, y2, fill='red'))
+        self.__graph.create_line(*self.vd.record[self.__step_i]['edge'])
+        self.__step_i += 1
 
     def __run_to_end(self):
         print("the final output")
         self.__run()
+        self.__step_i = len(self.vd.record)
+
+        for line in self.vd.polyedge_list:
+            self.__graph.create_line(*line)
 
     def __run(self):
         self.vd = VoronoiDiagram(self.point_list)
         print(self.point_list)
-
-        # TODO: Draw Line
-        print(f"num of line: {len(self.vd.polyedge_list)}")
-        self.__graph.create_line(*self.vd.polyedge_list[0], fill='blue')
-        self.__graph.create_line(*self.vd.polyedge_list[1], fill='red')
-        self.__graph.create_line(*self.vd.polyedge_list[2], fill='yellow')
-
-        # for line in self.vd.polyedge_list:
-        #     self.__graph.create_line(*line, color=)

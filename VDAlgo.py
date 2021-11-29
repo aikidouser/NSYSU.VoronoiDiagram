@@ -13,9 +13,17 @@ class VoronoiDiagram:
     def run(self, type=0):
         print("Start")
 
-        if len(self.point_list) == 2:
-            self.polyedge_list.append(self.__perpendicular(*self.point_list))
+        if len(self.point_list) == 1:
+            temp_dict = {'points': self.point_list}
+            self.record.append(temp_dict)
+
+        elif len(self.point_list) == 2:
+            ppdc = self.__perpendicular(*self.point_list)
+            self.polyedge_list.append(ppdc)
             self.polypoints_list.append(self.point_list)
+            temp_dict = {'points': self.point_list, 'edge': ppdc}
+            self.record.append(temp_dict)
+
 
         elif len(self.point_list) == 3:
             self.__3p_force(self.point_list)
@@ -88,6 +96,7 @@ class VoronoiDiagram:
         def check(inters, line, point_list, type=0):
             line_part1 = [line[0], inters]
             line_part2 = [inters, line[1]]
+            print(f"line_part1: {line_part1}, line_part2: {line_part2}")
             iters1 = self.__line_intersection(line_part1, point_list)
             # iters2 = self.__line_intersection(line_part2, point_list)
 
@@ -104,21 +113,27 @@ class VoronoiDiagram:
             
             if self.__line_intersection(l_ppdc, [points[s_point], points[(s_point - 1) % 3]]):
                 if_out = True
-            
+
             if not if_out:
                 m_ppdc = check(inters, m_ppdc, [points[s_point], points[(s_point - 1) % 3]])
             else:
                 m_ppdc = check(inters, m_ppdc, [points[s_point], points[(s_point - 1) % 3]], 1)
                 
+        def wb_record(ppdc, points):
+            temp_dict = {'points': points,
+                         'edge': ppdc}
+            self.record.append(temp_dict)
 
         self.polyedge_list.append(l_ppdc)
         self.polypoints_list.append([points[s_point], points[(s_point + 1) % 3]])
+        wb_record(l_ppdc, [points[s_point], points[(s_point + 1) % 3]])
         self.polyedge_list.append(r_ppdc)
         self.polypoints_list.append([points[(s_point + 1) % 3], points[(s_point + 2) % 3]])
+        wb_record(r_ppdc, [points[(s_point + 1) % 3], points[(s_point + 2) % 3]])
         if if_exists:
             self.polyedge_list.append(m_ppdc)
             self.polypoints_list.append([points[s_point], points[(s_point - 1) % 3]])
-
+            wb_record(m_ppdc, [points[s_point], points[(s_point - 1) % 3]])
 
     def __perpendicular(self, a, b):
         ppdcline = list()
@@ -138,7 +153,8 @@ class VoronoiDiagram:
 
             # print(f"const_n: {const_n}, coord: {stable_x} {result_y}")
             if 0 <= stable_x <= 600 and 0 <= result_y <= 600:
-                ppdcline.append([stable_x, result_y])
+                if [stable_x, result_y] not in ppdcline:
+                    ppdcline.append([stable_x, result_y])
 
             stable_y = point
             try:
@@ -149,7 +165,8 @@ class VoronoiDiagram:
 
             # print(f"const_n: {const_n}, coord: {stable_y} {result_x}")
             if 0 <= stable_y <= 600 and 0 <= result_x <= 600:
-                ppdcline.append([result_x, stable_y])
+                if [result_x, stable_y] not in ppdcline:
+                    ppdcline.append([result_x, stable_y])
 
         ppdcline.sort(key=lambda x: x[1])
         print(f"ppdc: {a}, {b} --> {ppdcline}")
