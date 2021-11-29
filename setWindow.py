@@ -76,7 +76,8 @@ class MainWindow:
         self.__clear_btn.grid(column=0, row=1, padx=2 * pad, pady=2 * pad)
         self.__sts_btn.grid(column=0, row=2, padx=2 * pad, pady=2 * pad)
         self.__run_btn.grid(column=0, row=3, padx=2 * pad, pady=2 * pad)
-        self.__write_btn.grid(column=0, row=4, sticky=tk.S, padx=2 * pad, pady=8 * pad)
+        self.__write_btn.grid(column=0, row=4, sticky=tk.S,
+                              padx=2 * pad, pady=8 * pad)
 
     def __choose_file(self):
         self.__file_path_msg.delete('1.0', 'end')
@@ -91,7 +92,10 @@ class MainWindow:
         else:
             self.__clear_graph()
             self.input_case_list.clear()
-            self.__input_preprocess()
+            if '.txt' in self.file_path:
+                self.__input_preprocess()
+            elif '.out' in self.file_path:
+                self.__output_show_graph()
             self.file_path = ""
 
     def __input_preprocess(self):
@@ -117,6 +121,24 @@ class MainWindow:
         self.__point_init()
         self.__file_path_msg.delete('1.0', 'end')
         self.__file_path_msg.insert('end', 'File read successfully')
+
+    # TODO:
+    def __output_show_graph(self):
+        print(self.file_path)
+
+        def draw_point(x, y):
+            x1, y1 = (x - 3), (y - 3)
+            x2, y2 = (x + 3), (y + 3)
+            self.__graph.create_oval(x1, y1, x2, y2, fill='black')
+
+        with open(self.file_path, 'r') as f:
+            for line in f:
+                split_line = line.split()
+                if split_line[0] == 'P':
+                    draw_point(int(split_line[1]), int(split_line[2]))
+                elif split_line[0] == 'E':
+                    temp = list(map(float, split_line[1:]))
+                    self.__graph.create_line(*temp)
 
     def __point_init(self):
         self.point_list = self.input_case_list[self.__case_i]
@@ -161,14 +183,15 @@ class MainWindow:
 
         if not self.__if_finished:
             self.__run()
-        
+
         if self.__step_i >= len(self.vd.record):
             return
 
         for point in self.vd.record[self.__step_i]['points']:
             x1, y1 = (point[0] - 5), (point[1] - 5)
             x2, y2 = (point[0] + 5), (point[1] + 5)
-            self.__draw_point_set.append(self.__graph.create_oval(x1, y1, x2, y2, fill='red'))
+            self.__draw_point_set.append(
+                self.__graph.create_oval(x1, y1, x2, y2, fill='red'))
         self.__graph.create_line(*self.vd.record[self.__step_i]['edge'])
         self.__step_i += 1
 
@@ -197,5 +220,5 @@ class MainWindow:
             for point in wb_point:
                 f.write(f'P {point[0]} {point[1]}\n')
             for edge in wb_edge:
-                f.write(f'E {edge[0][0]} {edge[0][1]} {edge[1][0]} {edge[1][1]}\n')
-
+                f.write(
+                    f'E {edge[0][0]} {edge[0][1]} {edge[1][0]} {edge[1][1]}\n')
