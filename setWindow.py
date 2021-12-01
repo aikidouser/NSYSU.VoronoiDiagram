@@ -101,7 +101,7 @@ class MainWindow:
     def __input_preprocess(self):
         print(self.file_path)
         point_num = 0
-        with open(self.file_path, 'r') as f:
+        with open(self.file_path, 'r', encoding='utf-8') as f:
             for line in f:
                 if "#" in line:
                     continue
