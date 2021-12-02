@@ -103,7 +103,7 @@ class MainWindow:
         point_num = 0
         with open(self.file_path, 'r', encoding='utf-8') as f:
             for line in f:
-                if "#" in line:
+                if "#" in line or (len(line) == 1 and line[0] == "\n"):
                     continue
                 if(len(line.split()) == 1):
                     point_num = int(line.split()[0])
@@ -222,3 +222,4 @@ class MainWindow:
             for edge in wb_edge:
                 f.write(
                     f'E {edge[0][0]} {edge[0][1]} {edge[1][0]} {edge[1][1]}\n')
+        self.vd.polyedge_list.clear()
