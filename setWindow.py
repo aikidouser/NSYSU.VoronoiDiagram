@@ -183,23 +183,25 @@ class MainWindow:
 
         if not self.__if_finished:
             self.__run()
+            self.__if_finished = True
 
         if self.__step_i >= len(self.vd.record):
             return
 
         for point in self.vd.record[self.__step_i]['points']:
+            
             x1, y1 = (point[0] - 5), (point[1] - 5)
             x2, y2 = (point[0] + 5), (point[1] + 5)
             self.__draw_point_set.append(
                 self.__graph.create_oval(x1, y1, x2, y2, fill='red'))
-        self.__graph.create_line(*self.vd.record[self.__step_i]['edge'])
+        self.__graph.create_line(*self.vd.record[self.__step_i]['edges'])
         self.__step_i += 1
 
     def __run_to_end(self):
         print("the final output")
         self.__run()
         self.__step_i = len(self.vd.record)
-
+        
         for line in self.vd.polyedge_list:
             self.__graph.create_line(*line)
 
@@ -220,6 +222,5 @@ class MainWindow:
             for point in wb_point:
                 f.write(f'P {point[0]} {point[1]}\n')
             for edge in wb_edge:
-                f.write(
-                    f'E {edge[0][0]} {edge[0][1]} {edge[1][0]} {edge[1][1]}\n')
+                f.write(f'E {edge[0][0]} {edge[0][1]} {edge[1][0]} {edge[1][1]}\n')
         self.vd.polyedge_list.clear()
