@@ -1,13 +1,25 @@
 # Voronoi Diagram
 
-## TODO:
+## Data structure
+
+## TODO
 
 ### Algo
-- Convex hull
-  - https://www.geeksforgeeks.org/tangents-two-convex-polygons/
-  - https://www.geeksforgeeks.org/convex-hull-using-divide-and-conquer-algorithm/
+
+#### Brute force
+
+- [ ] return the class of Convex hall
+
+#### Convex hull
+
+- All save in Counterclockwise
+
+- ref
+  - <https://www.geeksforgeeks.org/tangents-two-convex-polygons/>
+  - <https://www.geeksforgeeks.org/convex-hull-using-divide-and-conquer-algorithm/>
 
 ### Others
+
 - write back
 - points in polygon
 - hyperplane
