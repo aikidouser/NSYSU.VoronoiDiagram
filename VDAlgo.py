@@ -1,23 +1,32 @@
 import math
-from os import write
 import re
 from shapely import geometry as geo
+from functools import cmp_to_key
 
 
-def det(a, b):
-    return a[0] * b[1] - a[1] * b[0]
+def orientation(p1, p2, p3):
+    val = (float(p2[1] - p1[1]) * (p3[0] - p2[0])) - \
+        (float(p2[0] - p1[0]) * (p3[1] - p2[1]))
 
+    if (val > 0):
+        # Clockwise orientation
+        print("orientation: Clockwise")
+        return 1
 
-class Bisector:
-    def __init__(self, point_a, point_b, p_bisector):
-        self.p = (point_a, point_b)
-        self.line = p_bisector
+    elif (val < 0):
+        # Counterclockwise orientation
+        print("orientation: Counterclockwise")
+        return 2
+
+    else:
+        # Collinear orientation
+        print("orientation: Collinear orientation")
+        return 0
 
 
 class VoronoiDiagram:
     def __init__(self, point_list):
         self.point_list = sorted(point_list)
-        # self.point_list = point_list
         self.record = list()
         self.polyedge_list = list()     # for final result
         self.polypoints_list = list()   # for final result
@@ -25,81 +34,42 @@ class VoronoiDiagram:
         self.run()
 
     def run(self, type=0):
-        print("Start")
-
-        # if len(self.point_list) == 1:
-        #     temp_dict = {'points': self.point_list,
-        #                  'edge': [[-1, -1], [-1, 1]]}
-        #     self.record.append(temp_dict)
-
-        # elif len(self.point_list) == 2:
-        #     ppdc = self.__p_bisector(*self.point_list)
-        #     self.polyedge_list.append(ppdc)
-        #     self.polypoints_list.append(self.point_list)
-        #     temp_dict = {'points': self.point_list, 'edge': ppdc}
-        #     self.record.append(temp_dict)
-
-        self.__force(self.point_list)
+        print("Start:", self.point_list)
+        self.__garbage(self.point_list)
 
     def __garbage(self, point_list):
-        # This can only be used in the case of three points.
-        print(point_list)
+        print("Divided:", point_list)
         split = int(len(point_list)/2)
+        l_pointlist = point_list[0: split]
+        r_pointlist = point_list[split:]
         hyperplane_list = list()
 
-        if len(point_list) <= 1:
-            print(f"{point_list} return")
-            return point_list
+        if len(point_list) <= 3:
+            self.__brute_vd(point_list)
+            return
 
-        elif len(point_list) == 2:
-            self.polyedge_list.append(
-                self.__p_bisector(point_list[0], point_list[1]))
-            self.polypoints_list.append([point_list[0], point_list[1]])
-
-            # point_list = sorted(point_list, key=lambda x: x[0])
-
-            print(f"{point_list} return")
-            return point_list
-
-        l_pointlist = self.__garbage(point_list[0: split])
-        print("finish left")
-        r_pointlist = self.__garbage(point_list[split:])
-        print("finish right")
+        self.__garbage(l_pointlist)
+        print("finish left:", l_pointlist)
+        self.__garbage(r_pointlist)
+        print("finish right:", r_pointlist)
 
         # Merge
-        print("Merge")
-        l_point = l_pointlist[0]
-        for r_point in r_pointlist:
-            hyperplane = self.__p_bisector(l_point, r_point)
-            inters = self.__line_intersection(
-                hyperplane, self.polyedge_list[0])
+        print("Merge: l: {l_pointlist}, r: {r_pointlist}")
 
-            hyper_part1 = [hyperplane[0], inters]
-            hyper_part2 = [inters, hyperplane[1]]
-            check1 = self.__line_intersection(hyper_part1, [l_point, r_point])
-            check2 = self.__line_intersection(hyper_part2, [l_point, r_point])
-
-            if(check1):
-                hyperplane = hyper_part1
-            elif(check2):
-                hyperplane = hyper_part2
-
-            self.polyedge_list.append(hyperplane)
-
-    def __force(self, point_list):
+    def __brute_vd(self, point_list):
         s_index = 0
         dis_list = list()
 
         # TODO: check if need to merge
         if len(point_list) == 1:
-            self.__writeback_record('n', point_list, None)
+            self.__writeback_record('n', False, point_list, None)
             return
 
         elif len(point_list) == 2:
             p_bisector = self.__p_bisector(*self.point_list)
             self.polyedge_list.append(p_bisector)
             self.polypoints_list.append(point_list)
-            self.__writeback_record('n', point_list, p_bisector)
+            self.__writeback_record('n', False, point_list, p_bisector)
             return
 
         for i in range(len(point_list)):
@@ -109,16 +79,9 @@ class VoronoiDiagram:
         point_list += point_list[:s_index]
         del point_list[0:s_index]
 
-        def anti_clockwise(point_list):
-            d = 0
-            for i in range(1, len(point_list)):
-                d += det(point_list[i-1], point_list[i])
-            d += (det(point_list[-1], point_list[0]))
-            if d < 0:
-                point_list.reverse()
-            return point_list
-
-        point_list = anti_clockwise(point_list)
+        # point_list = anti_clockwise(point_list)
+        if orientation(*point_list) == 1:  # if it is clockwise
+            point_list.reverse()
         l_p_bisector = self.__p_bisector(point_list[0], point_list[1])
         r_p_bisector = self.__p_bisector(point_list[1], point_list[2])
         circumcenter = self.__line_intersection(l_p_bisector, r_p_bisector)
@@ -139,12 +102,12 @@ class VoronoiDiagram:
             self.polyedge_list.append(m_p_bisector)
             self.polypoints_list.append([point_list[2], point_list[0]])
             self.__writeback_record(
-                'n', point_list, l_p_bisector, r_p_bisector, m_p_bisector)
+                'n', False, point_list, l_p_bisector, r_p_bisector, m_p_bisector)
 
         else:
             write_back()
             self.__writeback_record(
-                'n', point_list, l_p_bisector, r_p_bisector)
+                'n', False, point_list, l_p_bisector, r_p_bisector)
 
     def __p_bisector(self, a, b):
         p_bisector = list()
@@ -152,7 +115,6 @@ class VoronoiDiagram:
         # vector = [a[0] - b[0], a[1] - b[1]]
         normal_vector = [b[1] - a[1], - (b[0] - a[0])]
         vector_extend = [i * 600 for i in normal_vector]
-        print(f"{a} {b} {normal_vector} {vector_extend}")
 
         start_p = [midpoint[0] - vector_extend[0],
                    midpoint[1] - vector_extend[1]]
@@ -166,24 +128,60 @@ class VoronoiDiagram:
     def __line_intersection(self, line_a, line_b):
         geo_line1 = geo.LineString(line_a)
         geo_line2 = geo.LineString(line_b)
-        print("intersection: ", geo_line1, geo_line2)
+        print("intersection: ", geo_line1, geo_line2, end="")
 
         if geo_line1.intersects(geo_line2):
             intersection = geo_line1.intersection(geo_line2)
             if(0 <= intersection.x <= 600 and 0 <= intersection.y <= 600):
+                print([intersection.x, intersection.y])
                 return [intersection.x, intersection.y]
+        print("None")
         return None
 
     # TODO:
-    def __writeback_record(self, type, points, *lines):
+    def __writeback_record(self, type, clean, points, *lines):
         temp_dict = dict()
         temp_dict['type'] = type
+        temp_dict['clean'] = clean
         temp_dict['points'] = points
         temp_dict['edges'] = lines
         self.record.append(temp_dict)
 
 
+class ConvexHull:
+    def __init__(self, point_list):
+        self.upper_tanget = list()
+        self.lower_tanget = list()
+        self.convex_hull = list()
+        self.mid_point = [0] * 2
+
+        for point in point_list:
+            self.mid_point[0] += point[0]
+            self.mid_point[1] += point[1]
+        self.mid_point[0] /= len(point_list)
+        self.mid_point[1] /= len(point_list)
+
+        self.point_list = sorted(
+            point_list, key=cmp_to_key(self.__clockwise_compare))
+
+    def __clockwise_compare(self, point1, point2):
+        vec_p = [point1[0] - self.mid_point[0], point1[1] - self.mid_point[1]]
+        vec_q = [point2[0] - self.mid_point[0], point2[1] - self.mid_point[1]]
+        val = vec_p[1] * vec_q[0] - vec_q[1] * vec_p[0]
+
+        if val > 0:
+            return 1
+        elif val == 0:
+            return 0
+        else:
+            return -1
+
+
 if __name__ == '__main__':
-    point_list = [[10, 20], [20, 40], [200, 400]]
-    vd = VoronoiDiagram(point_list)
-    print(vd.point_list)
+    point_list = [[100, 20], [20, 40], [30, 50]]
+    # vd = VoronoiDiagram(point_list)
+    # print(vd.point_list)
+
+    ch = ConvexHull(point_list)
+    print(ch.point_list)
+    orientation(*ch.point_list)
