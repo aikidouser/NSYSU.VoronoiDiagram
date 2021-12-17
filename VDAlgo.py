@@ -10,17 +10,17 @@ def orientation(p1, p2, p3):
 
     if val > 0:
         # Clockwise orientation
-        print("orientation: Clockwise")
+        # print("orientation: Clockwise")
         return 1
 
     elif val < 0:
         # Counterclockwise orientation
-        print("orientation: Counterclockwise")
+        # print("orientation: Counterclockwise")
         return -1
 
     elif val == 0:
         # Collinear orientation
-        print("orientation: Collinear orientation")
+        # print("orientation: Collinear orientation")
         return 0
 
 
@@ -156,6 +156,7 @@ class VoronoiDiagram:
 
 class ConvexHull:
     def __init__(self, point_list):
+        self.point_list = point_list
         self.upper_tanget = list()
         self.lower_tanget = list()
         self.cvhull = list()
@@ -168,8 +169,8 @@ class ConvexHull:
         self.mid_point[1] /= len(point_list)
 
         # TODO:
-        self.point_list = sorted(
-            point_list, key=cmp_to_key(self.__clockwise_compare))
+        # self.point_list = sorted(
+        #     point_list, key=cmp_to_key(self.__clockwise_compare))
 
     def __clockwise_compare(self, point1, point2):
         vec_p = [point1[0] - self.mid_point[0], point1[1] - self.mid_point[1]]
@@ -184,20 +185,31 @@ class ConvexHull:
             return -1
 
     # TODO: Convex Hull Brute Force
+    def brute_cvhull(self):
+        if len(self.point_list) == 1:
+            self.cvhull.append(self.point_list[0])
+
+        elif len(self.point_list) >= 2:
+            self.cvhull += self.point_list
+            self.cvhull.sort(key=cmp_to_key(self.__clockwise_compare))
 
 
 def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
-    print(f"Start to merge the Convex Hull: \
-            {hull_a.cvhull} {hull_b.cvhull}")
+    print(f"Start to merge the Convex Hull: {hull_a.cvhull} {hull_b.cvhull}")
+    size_a = len(hull_a.cvhull)
+    size_b = len(hull_b.cvhull)
     upper_done = False
     lower_done = False
-
-    ind_a = max(hull_a.cvhull, key=lambda x: x[0])
-    ind_b = min(hull_b.cvhull, key=lambda x: x[0])
+    ret_hull = list()
+    ind_a = hull_a.cvhull.index(max(hull_a.cvhull, key=lambda x: x[0]))
+    ind_b = hull_b.cvhull.index(min(hull_b.cvhull, key=lambda x: x[0]))
+    print(max(hull_a.cvhull, key=lambda x: x[0]))
+    print(min(hull_b.cvhull, key=lambda x: x[0]))
 
     # upper tangent
     upper_a = ind_a
     upper_b = ind_b
+    print(upper_a, upper_b)
     while not upper_done:
         upper_done = True
         while orientation(hull_b.cvhull[upper_b],
@@ -209,6 +221,9 @@ def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
                           hull_b.cvhull[upper_b], hull_b.cvhull[(upper_b - 1) % len(hull_b.cvhull)]) <= 0:
             upper_b = (upper_b - 1) % len(hull_b.cvhull)
             upper_done = False
+
+    hull_a.upper_tanget = [hull_b.cvhull[upper_b], hull_a.cvhull[upper_a]]
+    print("hull a upper tangent: ", hull_a.upper_tanget)
 
     # lower tangent
     lower_a = ind_a
@@ -224,14 +239,43 @@ def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
             lower_a = (lower_a - 1) % len(hull_a.cvhull)
             lower_done = False
 
+    hull_a.lower_tanget = [hull_a.cvhull[lower_a], hull_b.cvhull[lower_b]]
+    print("hull lower tangent: ", hull_a.lower_tanget)
+
+    ind = upper_a
+    ret_hull.append(hull_a.cvhull[ind])
+    while ind != lower_a:
+        ind = (ind + 1) % size_a
+        ret_hull.append(hull_a.cvhull[ind])
+
+    ind = lower_b
+    ret_hull.append(hull_b.cvhull[ind])
+    while(ind != upper_b):
+        ind = (ind + 1) % size_b
+        ret_hull.append(hull_b.cvhull[ind])
+
+    hull_a.cvhull = ret_hull.copy()
+    return hull_a
+
 
 if __name__ == '__main__':
-    point_list_a = [[100, 20], [20, 40], [30, 50]]
+    point_list_a = [[5, 3], [4, 8], [7, 6]]
+    point_list_b = [[9, 8], [10, 2], [12, 6]]
 
     # vd = VoronoiDiagram(point_list)
     # print(vd.point_list)
 
-    ch = ConvexHull(point_list_a)
-    print(ch.point_list)
-    print(max(point_list_a, key=lambda x: x[0]))
-    orientation(*ch.point_list)
+    # ch = ConvexHull(point_list_a)
+    # print(ch.point_list)
+    # print(max(point_list_a, key=lambda x: x[0]))
+    # orientation(*ch.point_list)
+
+    hull_a = ConvexHull(point_list_a)
+    hull_a.brute_cvhull()
+    print(hull_a.cvhull)
+    hull_b = ConvexHull(point_list_b)
+    hull_b.brute_cvhull()
+    print(hull_b.cvhull)
+    out_hull = convex_hull_merge(hull_a, hull_b)
+
+    print(out_hull.cvhull)
