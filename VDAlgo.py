@@ -30,6 +30,7 @@ class VoronoiDiagram:
         self.record = list()
         self.polyedge_list = list()     # for final result
         self.polypoints_list = list()   # for final result
+        self.convex_hull_list = list()
 
         self.run()
 
@@ -42,19 +43,27 @@ class VoronoiDiagram:
         split = int(len(point_list)/2)
         l_pointlist = point_list[0: split]
         r_pointlist = point_list[split:]
-        hyperplane_list = list()
 
+        # Brute Fore
         if len(point_list) <= 3:
             self.__brute_vd(point_list)
-            return
+            ret_cvhull = ConvexHull(point_list)
+            ret_cvhull.brute_cvhull()
 
-        self.__garbage(l_pointlist)
+            return ret_cvhull
+
+        # Get the ret_cvhull from conquer
+        l_cvhull = self.__garbage(l_pointlist)
         print("finish left:", l_pointlist)
-        self.__garbage(r_pointlist)
+        r_cvhull = self.__garbage(r_pointlist)
         print("finish right:", r_pointlist)
 
         # Merge
-        print("Merge: l: {l_pointlist}, r: {r_pointlist}")
+        print(f"Merge: l: {l_pointlist}, r: {r_pointlist}")
+        ret_cvhull = convex_hull_merge(l_cvhull, r_cvhull)
+        self.convex_hull_list = ret_cvhull.cvhull
+
+        ret_cvhull.upper_tanget
 
     # TODO: Set the return
     def __brute_vd(self, point_list):
@@ -69,7 +78,7 @@ class VoronoiDiagram:
 
         # 2 points case
         elif len(point_list) == 2:
-            p_bisector = self.__p_bisector(*self.point_list)
+            p_bisector = self.__p_bisector(*point_list)
             self.polyedge_list.append(p_bisector)
             self.polypoints_list.append(point_list)
             self.__writeback_record('n', False, point_list, p_bisector)
@@ -144,7 +153,7 @@ class VoronoiDiagram:
         print("None")
         return None
 
-    # TODO:
+    # TODO: Save all the line on the graph
     def __writeback_record(self, type, clean, points, *lines):
         temp_dict = dict()
         temp_dict['type'] = type
@@ -213,13 +222,13 @@ def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
     while not upper_done:
         upper_done = True
         while orientation(hull_b.cvhull[upper_b],
-                          hull_a.cvhull[upper_a], hull_a.cvhull[(upper_a + 1) % len(hull_a.cvhull)]) >= 0:
+                          hull_a.cvhull[upper_a], hull_a.cvhull[(upper_a + 1) % size_a]) >= 0:
             print("")
-            upper_a = (upper_a + 1) % len(hull_a.cvhull)
+            upper_a = (upper_a + 1) % size_a
 
         while orientation(hull_a.cvhull[upper_a],
-                          hull_b.cvhull[upper_b], hull_b.cvhull[(upper_b - 1) % len(hull_b.cvhull)]) <= 0:
-            upper_b = (upper_b - 1) % len(hull_b.cvhull)
+                          hull_b.cvhull[upper_b], hull_b.cvhull[(upper_b - 1) % size_b]) <= 0:
+            upper_b = (upper_b - 1) % size_b
             upper_done = False
 
     hull_a.upper_tanget = [hull_b.cvhull[upper_b], hull_a.cvhull[upper_a]]
@@ -231,12 +240,12 @@ def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
     while not lower_done:
         lower_done = True
         while orientation(hull_a.cvhull[lower_a],
-                          hull_b.cvhull[lower_b], hull_b.cvhull[(lower_b + 1) % len(hull_b.cvhull)]) >= 0:
-            lower_b = (lower_b + 1) % len(hull_b.cvhull)
+                          hull_b.cvhull[lower_b], hull_b.cvhull[(lower_b + 1) % size_b]) >= 0:
+            lower_b = (lower_b + 1) % size_b
 
         while orientation(hull_b.cvhull[lower_b],
-                          hull_a.cvhull[lower_a], hull_a.cvhull[(lower_a - 1) % len(hull_a.cvhull)]) <= 0:
-            lower_a = (lower_a - 1) % len(hull_a.cvhull)
+                          hull_a.cvhull[lower_a], hull_a.cvhull[(lower_a - 1) % size_a]) <= 0:
+            lower_a = (lower_a - 1) % size_a
             lower_done = False
 
     hull_a.lower_tanget = [hull_a.cvhull[lower_a], hull_b.cvhull[lower_b]]
@@ -253,6 +262,7 @@ def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
     while(ind != upper_b):
         ind = (ind + 1) % size_b
         ret_hull.append(hull_b.cvhull[ind])
+    ret_hull.append(ret_hull[0])
 
     hull_a.cvhull = ret_hull.copy()
     return hull_a

@@ -208,6 +208,8 @@ class MainWindow:
         for line in self.vd.polyedge_list:
             self.__graph.create_line(*line)
 
+        self.__graph.create_line(*self.vd.convex_hull_list, fill="Purple")
+
     def __run(self):
         self.vd = VoronoiDiagram(self.point_list)
         print(self.point_list)
