@@ -209,6 +209,7 @@ class MainWindow:
             self.__graph.create_line(*line)
 
         self.__graph.create_line(*self.vd.convex_hull_list, fill="Purple")
+        self.__graph.create_line(*self.vd.hyperplane_list, fill="Blue")
 
     def __run(self):
         self.vd = VoronoiDiagram(self.point_list)

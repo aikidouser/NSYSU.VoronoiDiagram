@@ -13,6 +13,7 @@
 #### Convex hull
 
 - All save in Counterclockwise
+  - However in the coordinate will be Clockwise
 
 - ref
   - <https://www.geeksforgeeks.org/tangents-two-convex-polygons/>
