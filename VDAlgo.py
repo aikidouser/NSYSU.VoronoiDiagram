@@ -268,6 +268,8 @@ class VoronoiDiagram:
         l_cur_point = cvhull.upper_tan[1].copy()
         l_next_point = list()
         r_next_point = list()
+        l_checked_set = list()
+        r_checked_set = list()
 
         # self.polyedge_list.append(hyperplane)
         # self.polypoints_list.append([cvhull.upper_tan[0], cvhull.upper_tan[1]])
@@ -281,11 +283,12 @@ class VoronoiDiagram:
             r_line_set = list()
 
             for points in self.polypoints_list:
-                if l_cur_point in points:
-                    l_line_set.append(self.polypoints_list.index(points))
+                temp_idx = self.polypoints_list.index(points)
+                if l_cur_point in points and temp_idx not in l_checked_set:
+                    l_line_set.append(temp_idx)
 
-                if r_cur_point in points:
-                    r_line_set.append(self.polypoints_list.index(points))
+                if r_cur_point in points and temp_idx not in r_checked_set:
+                    r_line_set.append(temp_idx)
 
             # Find the highest intersection between the hyperplane and the lines beside the point
             # TODO: Get the next point
@@ -311,8 +314,7 @@ class VoronoiDiagram:
                             if self.polypoints_list[ind][0] != r_cur_point else self.polypoints_list[ind][1]
                         r_line_ind = ind
 
-            if len(hyperplane) == 2:
-                hyperplane.pop()
+            hyperplane.pop()
 
             # TODO: Judge the relation between the hyperplane and the lines
             if l_highest_inters == r_highest_inters:
@@ -330,6 +332,8 @@ class VoronoiDiagram:
 
                 l_cur_point = l_next_point.copy()
                 r_cur_point = r_next_point.copy()
+                l_checked_set.append(l_line_ind)
+                r_checked_set.append(r_line_ind)
                 hyperplane.append(l_highest_inters)
 
             elif l_highest_inters[1] > r_highest_inters[1]:
@@ -339,6 +343,7 @@ class VoronoiDiagram:
                     self.polyedge_list[l_line_ind][0] = l_highest_inters.copy()
 
                 l_cur_point = l_next_point.copy()
+                l_checked_set.append(l_line_ind)
                 hyperplane.append(l_highest_inters)
 
             elif l_highest_inters[1] < r_highest_inters[1]:
@@ -348,6 +353,7 @@ class VoronoiDiagram:
                     self.polyedge_list[r_line_ind][1] = r_highest_inters.copy()
 
                 r_cur_point = r_next_point.copy()
+                r_checked_set.append(r_line_ind)
                 hyperplane.append(r_highest_inters)
 
             temp_hyper = self.__p_bisector(l_cur_point, r_cur_point)
