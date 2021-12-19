@@ -118,7 +118,6 @@ def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
     while(ind != upper_b):
         ind = (ind + 1) % size_b
         ret_hull.append(hull_b.cvhull[ind])
-    # ret_hull.append(ret_hull[0])
 
     hull_a.cvhull = ret_hull.copy()
     return hull_a
@@ -285,6 +284,8 @@ class VoronoiDiagram:
             r_line_set = list()
 
             for points in self.polypoints_list:
+                if not points:
+                    continue
                 temp_idx = self.polypoints_list.index(points)
                 if l_cur_point in points and temp_idx != l_prev_checked:
                     l_line_set.append(temp_idx)
@@ -346,9 +347,8 @@ class VoronoiDiagram:
                     checked_e = orientation(
                         hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
                     if checked_s == checked_e and checked_s == -1:
-                        self.polyedge_list.pop(idx)
-                        self.polypoints_list.pop(idx)
-                # l_ending()
+                        self.polyedge_list[idx] = None
+                        self.polypoints_list[idx] = None
 
                 r_cur_point = r_next_point.copy()
                 r_prev_checked = r_line_ind
@@ -360,9 +360,8 @@ class VoronoiDiagram:
                     checked_e = orientation(
                         hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
                     if checked_s == checked_e and checked_s == -1:
-                        self.polyedge_list.pop(idx)
-                        self.polypoints_list.pop(idx)
-                # r_ending()
+                        self.polyedge_list[idx] = None
+                        self.polypoints_list[idx] = None
 
             elif l_highest_inters[1] > r_highest_inters[1]:
                 hyperplane.append(l_highest_inters)
@@ -385,9 +384,8 @@ class VoronoiDiagram:
                     checked_e = orientation(
                         hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
                     if checked_s == checked_e and checked_s == -1:
-                        self.polyedge_list.pop(idx)
-                        self.polypoints_list.pop(idx)
-                # l_ending()
+                        self.polyedge_list[idx] = None
+                        self.polypoints_list[idx] = None
 
             elif l_highest_inters[1] < r_highest_inters[1]:
                 hyperplane.append(r_highest_inters)
@@ -410,19 +408,24 @@ class VoronoiDiagram:
                     checked_e = orientation(
                         hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
                     if checked_s == checked_e and checked_s == 1:
-                        self.polyedge_list.pop(idx)
-                        self.polypoints_list.pop(idx)
-                # r_ending()
+                        self.polyedge_list[idx] = None
+                        self.polypoints_list[idx] = None
 
             temp_hyper = self.__p_bisector(l_cur_point, r_cur_point)
             temp_hyper.sort(reverse=True, key=lambda x: x[1])
             temp_polyedge_list.append(hyperplane[-2:])
             hyperplane.append(temp_hyper[1])
 
+        self.polypoints_list = [
+            x for x in self.polypoints_list if x is not None]
+        self.polyedge_list = [
+            x for x in self.polyedge_list if x is not None]
+
         temp_polypoint_list.append([l_cur_point, r_cur_point])
         temp_polyedge_list.append(hyperplane[-2:])
         print(f"hyperplane: {hyperplane}")
         self.hyperplane_list = hyperplane.copy()
+
         self.polypoints_list += temp_polypoint_list
         self.polyedge_list += temp_polyedge_list
 
@@ -440,24 +443,3 @@ class VoronoiDiagram:
             temp_dict['edges'] = copy.deepcopy(self.hyperplane_list)
 
         self.record.append(temp_dict)
-
-
-if __name__ == '__main__':
-    point_list_a = [[5, 3], [4, 8], [7, 6]]
-    point_list_b = [[9, 8], [10, 2], [12, 6]]
-
-    vd = VoronoiDiagram(point_list_a)
-    print("main: ", vd.polyedge_list)
-
-    # ch = ConvexHull(point_list_a)
-    # print(ch.point_list)
-    # print(max(point_list_a, key=lambda x: x[0]))
-    # orientation(*ch.point_list)
-
-    # hull_a = ConvexHull(point_list_a)
-    # print(hull_a.cvhull)
-    # hull_b = ConvexHull(point_list_b)
-    # print(hull_b.cvhull)
-    # out_hull = convex_hull_merge(hull_a, hull_b)
-
-    # print(out_hull.cvhull)
