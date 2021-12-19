@@ -1,8 +1,9 @@
 from os import write
-import tkinter as tk
 from tkinter import Canvas
 from tkinter import filedialog, messagebox
 from VDAlgo import VoronoiDiagram
+import tkinter as tk
+import random
 
 
 class MainWindow:
@@ -226,7 +227,7 @@ class MainWindow:
                     del self.__draw_cvhull_set[-2:]
                 self.__draw_cvhull_set.append(
                     self.__graph.create_line(
-                        *self.vd.record[self.__step_i]['edges'], fill="Purple"))
+                        *self.vd.record[self.__step_i]['edges'], fill="#" + "%06x" % random.randint(1, 16777214)))
 
             if edge_type == 'h':
                 self.__draw_hyper = self.__graph.create_line(
