@@ -170,6 +170,8 @@ class VoronoiDiagram:
 
         # Hyperplane
         self.__hyperplane(ret_cvhull)
+        self.__writeback_record('h', False, [])
+        self.__writeback_record('n', True, [])
 
         return ret_cvhull
 
@@ -271,6 +273,8 @@ class VoronoiDiagram:
         r_next_point = list()
         l_prev_checked = -1
         r_prev_checked = -1
+        temp_polypoint_list = list()
+        temp_polyedge_list = list()
 
         # self.polyedge_list.append(hyperplane)
         # self.polypoints_list.append([cvhull.upper_tan[0], cvhull.upper_tan[1]])
@@ -314,10 +318,10 @@ class VoronoiDiagram:
                             if self.polypoints_list[ind][0] != r_cur_point else self.polypoints_list[ind][1]
                         r_line_ind = ind
 
+            temp_polypoint_list.append([l_cur_point, r_cur_point])
             hyperplane.pop()
 
             # Judge the relation between the hyperplane and the lines
-            # FIXME: hyperplane cut line error
             if l_highest_inters == r_highest_inters:
                 hyperplane.append(l_highest_inters)
 
@@ -415,10 +419,14 @@ class VoronoiDiagram:
 
             temp_hyper = self.__p_bisector(l_cur_point, r_cur_point)
             temp_hyper.sort(reverse=True, key=lambda x: x[1])
+            temp_polyedge_list.append(hyperplane[-2:])
             hyperplane.append(temp_hyper[1])
 
+        temp_polyedge_list.append(hyperplane[-2:])
         print(f"hyperplane: {hyperplane}")
         self.hyperplane_list = hyperplane.copy()
+        self.polypoints_list += temp_polypoint_list
+        self.polyedge_list += temp_polyedge_list
 
     # TODO: Save all the line on the graph
     def __writeback_record(self, type, clean, points):
@@ -432,7 +440,7 @@ class VoronoiDiagram:
         elif type == 'c':
             temp_dict['edges'] = copy.deepcopy(self.convex_hull_list)
         elif type == 'h':
-            temp_dict['edges']
+            temp_dict['edges'] = copy.deepcopy(self.hyperplane_list)
 
         self.record.append(temp_dict)
 

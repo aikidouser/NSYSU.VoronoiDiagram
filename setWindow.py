@@ -21,6 +21,7 @@ class MainWindow:
         self.__draw_point_set = list()
         self.__draw_line_set = list()
         self.__draw_cvhull_set = list()
+        self.__draw_hyper = None
 
         # basic setting
         # read file part
@@ -187,7 +188,12 @@ class MainWindow:
         # Del the highlight points
         for point in self.__draw_point_set:
             self.__graph.delete(point)
+
+        if self.__draw_hyper:
+            self.__graph.delete(self.__draw_hyper)
+
         self.__draw_point_set.clear()
+        self.__draw_hyper = None
 
         if self.__step_i >= len(self.vd.record):
             return
@@ -204,7 +210,7 @@ class MainWindow:
         edge_type = self.vd.record[self.__step_i]['type']
 
         if(self.vd.record[self.__step_i]['edges'][0]):
-            if(edge_type == 'n'):
+            if edge_type == 'n':
                 if clean_prev:
                     for edge in self.__draw_line_set:
                         self.__graph.delete(edge)
@@ -212,7 +218,7 @@ class MainWindow:
                 for line in self.vd.record[self.__step_i]['edges']:
                     self.__draw_line_set.append(self.__graph.create_line(line))
 
-            elif(edge_type == 'c'):
+            elif edge_type == 'c':
                 if clean_prev:
                     # FIXME:
                     for cvhull in self.__draw_cvhull_set[-2:]:
@@ -221,6 +227,10 @@ class MainWindow:
                 self.__draw_cvhull_set.append(
                     self.__graph.create_line(
                         *self.vd.record[self.__step_i]['edges'], fill="Purple"))
+
+            if edge_type == 'h':
+                self.__draw_hyper = self.__graph.create_line(
+                    *self.vd.record[self.__step_i]['edges'], fill="Pink")
 
         self.__step_i += 1
 
@@ -233,7 +243,7 @@ class MainWindow:
             self.__graph.create_line(*line)
 
         self.__graph.create_line(*self.vd.convex_hull_list, fill="Purple")
-        self.__graph.create_line(*self.vd.hyperplane_list, fill="Blue")
+        # self.__graph.create_line(*self.vd.hyperplane_list, fill="Blue")
 
     def __run(self):
         self.vd = VoronoiDiagram(self.point_list)
