@@ -79,11 +79,11 @@ def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
     while not upper_done:
         upper_done = True
         while orientation(hull_b.cvhull[upper_b],
-                          hull_a.cvhull[upper_a], hull_a.cvhull[(upper_a + 1) % size_a]) >= 0:
+                          hull_a.cvhull[upper_a], hull_a.cvhull[(upper_a + 1) % size_a]) > 0:
             upper_a = (upper_a + 1) % size_a
 
         while orientation(hull_a.cvhull[upper_a],
-                          hull_b.cvhull[upper_b], hull_b.cvhull[(upper_b - 1) % size_b]) <= 0:
+                          hull_b.cvhull[upper_b], hull_b.cvhull[(upper_b - 1) % size_b]) < 0:
             upper_b = (upper_b - 1) % size_b
             upper_done = False
 
@@ -96,11 +96,11 @@ def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
     while not lower_done:
         lower_done = True
         while orientation(hull_a.cvhull[lower_a],
-                          hull_b.cvhull[lower_b], hull_b.cvhull[(lower_b + 1) % size_b]) >= 0:
+                          hull_b.cvhull[lower_b], hull_b.cvhull[(lower_b + 1) % size_b]) > 0:
             lower_b = (lower_b + 1) % size_b
 
         while orientation(hull_b.cvhull[lower_b],
-                          hull_a.cvhull[lower_a], hull_a.cvhull[(lower_a - 1) % size_a]) <= 0:
+                          hull_a.cvhull[lower_a], hull_a.cvhull[(lower_a - 1) % size_a]) < 0:
             lower_a = (lower_a - 1) % size_a
             lower_done = False
 
@@ -150,7 +150,7 @@ class VoronoiDiagram:
             self.__brute_vd(point_list)
             ret_cvhull = ConvexHull(point_list)
             self.convex_hull_list = (
-                ret_cvhull.cvhull + ret_cvhull.cvhull[0]).copy()
+                ret_cvhull.cvhull + [ret_cvhull.cvhull[0]]).copy()
             # ret_cvhull.brute_cvhull()
 
             return ret_cvhull
@@ -268,8 +268,8 @@ class VoronoiDiagram:
         l_cur_point = cvhull.upper_tan[1].copy()
         l_next_point = list()
         r_next_point = list()
-        l_checked_set = list()
-        r_checked_set = list()
+        l_prev_checked = -1
+        r_prev_checked = -1
 
         # self.polyedge_list.append(hyperplane)
         # self.polypoints_list.append([cvhull.upper_tan[0], cvhull.upper_tan[1]])
@@ -277,21 +277,20 @@ class VoronoiDiagram:
         while l_cur_point != cvhull.lower_tan[0] or r_cur_point != cvhull.lower_tan[1]:
             l_highest_inters = [0, -1]
             r_highest_inters = [0, -1]
-            l_line_ind = 0
-            r_line_ind = 0
+            l_line_ind = None
+            r_line_ind = None
             l_line_set = list()
             r_line_set = list()
 
             for points in self.polypoints_list:
                 temp_idx = self.polypoints_list.index(points)
-                if l_cur_point in points and temp_idx not in l_checked_set:
+                if l_cur_point in points and temp_idx != l_prev_checked:
                     l_line_set.append(temp_idx)
 
-                if r_cur_point in points and temp_idx not in r_checked_set:
+                if r_cur_point in points and temp_idx != r_prev_checked:
                     r_line_set.append(temp_idx)
 
             # Find the highest intersection between the hyperplane and the lines beside the point
-            # TODO: Get the next point
             for ind in l_line_set:
                 check_line = self.polyedge_list[ind]
                 hyper_inters = self.__line_intersection(
@@ -316,7 +315,8 @@ class VoronoiDiagram:
 
             hyperplane.pop()
 
-            # TODO: Judge the relation between the hyperplane and the lines
+            # Judge the relation between the hyperplane and the lines
+            # FIXME: hyperplane cut line error
             if l_highest_inters == r_highest_inters:
                 # left part: change the point with higher x
                 if self.polyedge_list[l_line_ind][0][0] < self.polyedge_list[l_line_ind][1][0]:
@@ -330,11 +330,34 @@ class VoronoiDiagram:
                 else:
                     self.polyedge_list[r_line_ind][1] = r_highest_inters.copy()
 
-                l_cur_point = l_next_point.copy()
-                r_cur_point = r_next_point.copy()
-                l_checked_set.append(l_line_ind)
-                r_checked_set.append(r_line_ind)
                 hyperplane.append(l_highest_inters)
+                l_cur_point = l_next_point.copy()
+                l_prev_checked = l_line_ind
+                l_line_set.remove(l_line_ind)
+
+                for idx in l_line_set:
+                    checked_s = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][0])
+                    checked_e = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
+                    if checked_s == checked_e and checked_s == -1:
+                        self.polyedge_list.pop(idx)
+                        self.polypoints_list.pop(idx)
+                # l_ending()
+
+                r_cur_point = r_next_point.copy()
+                r_prev_checked = r_line_ind
+                r_line_set.remove(r_line_ind)
+
+                for idx in r_line_set:
+                    checked_s = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][0])
+                    checked_e = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
+                    if checked_s == checked_e and checked_s == -1:
+                        self.polyedge_list.pop(idx)
+                        self.polypoints_list.pop(idx)
+                # r_ending()
 
             elif l_highest_inters[1] > r_highest_inters[1]:
                 if self.polyedge_list[l_line_ind][0][0] < self.polyedge_list[l_line_ind][1][0]:
@@ -342,9 +365,21 @@ class VoronoiDiagram:
                 else:
                     self.polyedge_list[l_line_ind][0] = l_highest_inters.copy()
 
-                l_cur_point = l_next_point.copy()
-                l_checked_set.append(l_line_ind)
                 hyperplane.append(l_highest_inters)
+                l_cur_point = l_next_point.copy()
+                l_prev_checked = l_line_ind
+                r_prev_checked = -1
+                l_line_set.remove(l_line_ind)
+
+                for idx in l_line_set:
+                    checked_s = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][0])
+                    checked_e = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
+                    if checked_s == checked_e and checked_s == -1:
+                        self.polyedge_list.pop(idx)
+                        self.polypoints_list.pop(idx)
+                # l_ending()
 
             elif l_highest_inters[1] < r_highest_inters[1]:
                 if self.polyedge_list[r_line_ind][0][0] < self.polyedge_list[r_line_ind][1][0]:
@@ -352,9 +387,23 @@ class VoronoiDiagram:
                 else:
                     self.polyedge_list[r_line_ind][1] = r_highest_inters.copy()
 
-                r_cur_point = r_next_point.copy()
-                r_checked_set.append(r_line_ind)
                 hyperplane.append(r_highest_inters)
+                r_cur_point = r_next_point.copy()
+                l_prev_checked = -1
+                r_prev_checked = r_line_ind
+                r_line_set.remove(r_line_ind)
+
+                for idx in r_line_set:
+                    checked_s = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][0])
+                    checked_e = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
+                    if checked_s == checked_e and checked_s == 1:
+                        self.polyedge_list.pop(idx)
+                        self.polypoints_list.pop(idx)
+                # r_ending()
+
+            # FIXME: Del the nonintersection
 
             temp_hyper = self.__p_bisector(l_cur_point, r_cur_point)
             temp_hyper.sort(reverse=True, key=lambda x: x[1])
