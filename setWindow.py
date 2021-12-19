@@ -1,9 +1,9 @@
+import random
+import tkinter as tk
 from os import write
 from tkinter import Canvas
 from tkinter import filedialog, messagebox
 from VDAlgo import VoronoiDiagram
-import tkinter as tk
-import random
 
 
 class MainWindow:
@@ -152,6 +152,8 @@ class MainWindow:
             x1, y1 = (point[0] - 3), (point[1] - 3)
             x2, y2 = (point[0] + 3), (point[1] + 3)
             self.__graph.create_oval(x1, y1, x2, y2, fill='black')
+            self.__graph.create_text(
+                point[0] + 10, point[1] + 10, text=f"({point[0]}, {point[1]})")
 
     def __draw_point(self, event):
         x1, y1 = (event.x - 3), (event.y - 3)
@@ -160,6 +162,8 @@ class MainWindow:
         if tmp_list not in self.point_list:
             self.point_list.append(tmp_list)
         self.__graph.create_oval(x1, y1, x2, y2, fill='black')
+        self.__graph.create_text(
+            event.x + 10, event.y + 10, text=f"({event.x}, {event.y})")
 
     def __next_case(self):
         print(f"case: {self.__case_i}/{len(self.input_case_list)}")
@@ -225,9 +229,11 @@ class MainWindow:
                     for cvhull in self.__draw_cvhull_set[-2:]:
                         self.__graph.delete(cvhull)
                     del self.__draw_cvhull_set[-2:]
+                temp_edge = self.vd.record[self.__step_i]['edges'] + \
+                    self.vd.record[self.__step_i]['edges'][0]
                 self.__draw_cvhull_set.append(
                     self.__graph.create_line(
-                        *self.vd.record[self.__step_i]['edges'], fill="#" + "%06x" % random.randint(1, 16777214)))
+                        temp_edge, fill="#" + "%06x" % random.randint(1, 16777214)))
 
             if edge_type == 'h':
                 self.__draw_hyper = self.__graph.create_line(
@@ -243,7 +249,8 @@ class MainWindow:
         for line in self.vd.polyedge_list:
             self.__graph.create_line(*line)
 
-        self.__graph.create_line(*self.vd.convex_hull_list, fill="Purple")
+        temp_edge = self.vd.convex_hull_list + self.vd.convex_hull_list[0]
+        self.__graph.create_line(temp_edge, fill="Purple")
         # self.__graph.create_line(*self.vd.hyperplane_list, fill="Blue")
 
     def __run(self):

@@ -1,7 +1,10 @@
 import math
 import copy
+import sys
 from shapely import geometry as geo
 from functools import cmp_to_key
+
+INT_MIN = -sys.maxsize - 1
 
 
 def orientation(p1, p2, p3):
@@ -10,17 +13,14 @@ def orientation(p1, p2, p3):
 
     if val > 0:
         # Clockwise orientation
-        # print("orientation: Clockwise")
         return 1
 
     elif val < 0:
         # Counterclockwise orientation
-        # print("orientation: Counterclockwise")
         return -1
 
     elif val == 0:
         # Collinear orientation
-        # print("orientation: Collinear orientation")
         return 0
 
 
@@ -118,7 +118,7 @@ def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
     while(ind != upper_b):
         ind = (ind + 1) % size_b
         ret_hull.append(hull_b.cvhull[ind])
-    ret_hull.append(ret_hull[0])
+    # ret_hull.append(ret_hull[0])
 
     hull_a.cvhull = ret_hull.copy()
     return hull_a
@@ -276,12 +276,9 @@ class VoronoiDiagram:
         temp_polypoint_list = list()
         temp_polyedge_list = list()
 
-        # self.polyedge_list.append(hyperplane)
-        # self.polypoints_list.append([cvhull.upper_tan[0], cvhull.upper_tan[1]])
-
         while l_cur_point != cvhull.lower_tan[0] or r_cur_point != cvhull.lower_tan[1]:
-            l_highest_inters = [0, -999999999]
-            r_highest_inters = [0, -999999999]
+            l_highest_inters = [0, INT_MIN]
+            r_highest_inters = [0, INT_MIN]
             l_line_ind = None
             r_line_ind = None
             l_line_set = list()
@@ -422,13 +419,13 @@ class VoronoiDiagram:
             temp_polyedge_list.append(hyperplane[-2:])
             hyperplane.append(temp_hyper[1])
 
+        temp_polypoint_list.append([l_cur_point, r_cur_point])
         temp_polyedge_list.append(hyperplane[-2:])
         print(f"hyperplane: {hyperplane}")
         self.hyperplane_list = hyperplane.copy()
         self.polypoints_list += temp_polypoint_list
         self.polyedge_list += temp_polyedge_list
 
-    # TODO: Save all the line on the graph
     def __writeback_record(self, type, clean, points):
         temp_dict = dict()
         temp_dict['type'] = type
