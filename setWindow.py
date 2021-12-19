@@ -209,7 +209,7 @@ class MainWindow:
         clean_prev = self.vd.record[self.__step_i]['clean']
         edge_type = self.vd.record[self.__step_i]['type']
 
-        if(self.vd.record[self.__step_i]['edges'][0]):
+        if self.vd.record[self.__step_i]['edges']:
             if edge_type == 'n':
                 if clean_prev:
                     for edge in self.__draw_line_set:
