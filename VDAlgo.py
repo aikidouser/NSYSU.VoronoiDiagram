@@ -1,5 +1,5 @@
 import math
-import re
+import copy
 from shapely import geometry as geo
 from functools import cmp_to_key
 
@@ -147,10 +147,11 @@ class VoronoiDiagram:
 
         # Brute Fore
         if len(point_list) <= 3:
-            self.__brute_vd(point_list)
             ret_cvhull = ConvexHull(point_list)
             self.convex_hull_list = (
                 ret_cvhull.cvhull + [ret_cvhull.cvhull[0]]).copy()
+            self.__writeback_record('c', False, point_list)
+            self.__brute_vd(point_list)
             # ret_cvhull.brute_cvhull()
 
             return ret_cvhull
@@ -165,20 +166,20 @@ class VoronoiDiagram:
         print(f"Merge: l: {l_pointlist}, r: {r_pointlist}")
         ret_cvhull = convex_hull_merge(l_cvhull, r_cvhull)
         self.convex_hull_list = ret_cvhull.cvhull.copy()
+        self.__writeback_record('c', True, point_list)
 
         # Hyperplane
         self.__hyperplane(ret_cvhull)
 
         return ret_cvhull
 
-    # TODO: Set the return
     def __brute_vd(self, point_list):
         s_index = 0
         dis_list = list()
 
         # 1 point case
         if len(point_list) == 1:
-            self.__writeback_record('n', False, point_list, None)
+            self.__writeback_record('n', False, point_list)
             return
 
         # 2 points case
@@ -186,7 +187,7 @@ class VoronoiDiagram:
             p_bisector = self.__p_bisector(*point_list)
             self.polyedge_list.append(p_bisector)
             self.polypoints_list.append(point_list)
-            self.__writeback_record('n', False, point_list, p_bisector)
+            self.__writeback_record('n', False, point_list)
             return
 
         # 3 points case
@@ -219,13 +220,11 @@ class VoronoiDiagram:
             write_back()
             self.polyedge_list.append(m_p_bisector)
             self.polypoints_list.append([point_list[2], point_list[0]])
-            self.__writeback_record(
-                'n', False, point_list, l_p_bisector, r_p_bisector, m_p_bisector)
+            self.__writeback_record('n', False, point_list)
 
         else:
             write_back()
-            self.__writeback_record(
-                'n', False, point_list, l_p_bisector, r_p_bisector)
+            self.__writeback_record('n', False, point_list)
 
         return
 
@@ -422,12 +421,19 @@ class VoronoiDiagram:
         self.hyperplane_list = hyperplane.copy()
 
     # TODO: Save all the line on the graph
-    def __writeback_record(self, type, clean, points, *lines):
+    def __writeback_record(self, type, clean, points):
         temp_dict = dict()
         temp_dict['type'] = type
         temp_dict['clean'] = clean
         temp_dict['points'] = points
-        temp_dict['edges'] = lines
+
+        if type == 'n':
+            temp_dict['edges'] = copy.deepcopy(self.polyedge_list)
+        elif type == 'c':
+            temp_dict['edges'] = copy.deepcopy(self.convex_hull_list)
+        elif type == 'h':
+            temp_dict['edges']
+
         self.record.append(temp_dict)
 
 

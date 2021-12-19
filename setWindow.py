@@ -19,6 +19,8 @@ class MainWindow:
         self.__if_finished = False
         self.__step_i = 0
         self.__draw_point_set = list()
+        self.__draw_line_set = list()
+        self.__draw_cvhull_set = list()
 
         # basic setting
         # read file part
@@ -178,28 +180,48 @@ class MainWindow:
     def __step_by_step(self):
         print("press one time show one step.")
         # TODO: Del the Hyperplane
-        for point in self.__draw_point_set:
-            self.__graph.delete(point)
-
-        self.__draw_point_set.clear()
-
         if not self.__if_finished:
             self.__run()
             self.__if_finished = True
 
+        # Del the highlight points
+        for point in self.__draw_point_set:
+            self.__graph.delete(point)
+        self.__draw_point_set.clear()
+
         if self.__step_i >= len(self.vd.record):
             return
 
+        # Draw new highlight points
         for point in self.vd.record[self.__step_i]['points']:
-
             x1, y1 = (point[0] - 5), (point[1] - 5)
             x2, y2 = (point[0] + 5), (point[1] + 5)
             self.__draw_point_set.append(
                 self.__graph.create_oval(x1, y1, x2, y2, fill='red'))
 
+        # Check if I need to del the prev line
+        clean_prev = self.vd.record[self.__step_i]['clean']
+        edge_type = self.vd.record[self.__step_i]['type']
+
         if(self.vd.record[self.__step_i]['edges'][0]):
-            for line in self.vd.record[self.__step_i]['edges']:
-                self.__graph.create_line(line)
+            if(edge_type == 'n'):
+                if clean_prev:
+                    for edge in self.__draw_line_set:
+                        self.__graph.delete(edge)
+                    self.__draw_line_set.clear()
+                for line in self.vd.record[self.__step_i]['edges']:
+                    self.__draw_line_set.append(self.__graph.create_line(line))
+
+            elif(edge_type == 'c'):
+                if clean_prev:
+                    # FIXME:
+                    for cvhull in self.__draw_cvhull_set[-2:]:
+                        self.__graph.delete(cvhull)
+                    del self.__draw_cvhull_set[-2:]
+                self.__draw_cvhull_set.append(
+                    self.__graph.create_line(
+                        *self.vd.record[self.__step_i]['edges'], fill="Purple"))
+
         self.__step_i += 1
 
     def __run_to_end(self):
