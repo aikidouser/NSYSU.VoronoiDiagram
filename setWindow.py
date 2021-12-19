@@ -177,8 +177,10 @@ class MainWindow:
 
     def __step_by_step(self):
         print("press one time show one step.")
+        # TODO: Del the Hyperplane
         for point in self.__draw_point_set:
             self.__graph.delete(point)
+
         self.__draw_point_set.clear()
 
         if not self.__if_finished:

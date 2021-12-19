@@ -169,6 +169,8 @@ class VoronoiDiagram:
         # Hyperplane
         self.__hyperplane(ret_cvhull)
 
+        return ret_cvhull
+
     # TODO: Set the return
     def __brute_vd(self, point_list):
         s_index = 0
@@ -318,19 +320,22 @@ class VoronoiDiagram:
             # Judge the relation between the hyperplane and the lines
             # FIXME: hyperplane cut line error
             if l_highest_inters == r_highest_inters:
-                # left part: change the point with higher x
-                if self.polyedge_list[l_line_ind][0][0] < self.polyedge_list[l_line_ind][1][0]:
+                hyperplane.append(l_highest_inters)
+
+                cut_checked = orientation(
+                    hyperplane[-2], hyperplane[-1], self.polyedge_list[l_line_ind][0])
+                if cut_checked == 1:
                     self.polyedge_list[l_line_ind][1] = l_highest_inters.copy()
                 else:
                     self.polyedge_list[l_line_ind][0] = l_highest_inters.copy()
 
-                # right part: change the point with lower x
-                if self.polyedge_list[r_line_ind][0][0] < self.polyedge_list[r_line_ind][1][0]:
-                    self.polyedge_list[r_line_ind][0] = r_highest_inters.copy()
-                else:
+                cut_checked = orientation(
+                    hyperplane[-2], hyperplane[-1], self.polyedge_list[r_line_ind][0])
+                if cut_checked == -1:
                     self.polyedge_list[r_line_ind][1] = r_highest_inters.copy()
+                else:
+                    self.polyedge_list[r_line_ind][0] = r_highest_inters.copy()
 
-                hyperplane.append(l_highest_inters)
                 l_cur_point = l_next_point.copy()
                 l_prev_checked = l_line_ind
                 l_line_set.remove(l_line_ind)
@@ -360,12 +365,15 @@ class VoronoiDiagram:
                 # r_ending()
 
             elif l_highest_inters[1] > r_highest_inters[1]:
-                if self.polyedge_list[l_line_ind][0][0] < self.polyedge_list[l_line_ind][1][0]:
+                hyperplane.append(l_highest_inters)
+
+                cut_checked = orientation(
+                    hyperplane[-2], hyperplane[-1], self.polyedge_list[l_line_ind][0])
+                if cut_checked == 1:
                     self.polyedge_list[l_line_ind][1] = l_highest_inters.copy()
                 else:
                     self.polyedge_list[l_line_ind][0] = l_highest_inters.copy()
 
-                hyperplane.append(l_highest_inters)
                 l_cur_point = l_next_point.copy()
                 l_prev_checked = l_line_ind
                 r_prev_checked = -1
@@ -382,12 +390,15 @@ class VoronoiDiagram:
                 # l_ending()
 
             elif l_highest_inters[1] < r_highest_inters[1]:
-                if self.polyedge_list[r_line_ind][0][0] < self.polyedge_list[r_line_ind][1][0]:
-                    self.polyedge_list[r_line_ind][0] = r_highest_inters.copy()
-                else:
-                    self.polyedge_list[r_line_ind][1] = r_highest_inters.copy()
-
                 hyperplane.append(r_highest_inters)
+
+                cut_checked = orientation(
+                    hyperplane[-2], hyperplane[-1], self.polyedge_list[r_line_ind][0])
+                if cut_checked == -1:
+                    self.polyedge_list[r_line_ind][1] = r_highest_inters.copy()
+                else:
+                    self.polyedge_list[r_line_ind][0] = r_highest_inters.copy()
+
                 r_cur_point = r_next_point.copy()
                 l_prev_checked = -1
                 r_prev_checked = r_line_ind
@@ -402,8 +413,6 @@ class VoronoiDiagram:
                         self.polyedge_list.pop(idx)
                         self.polypoints_list.pop(idx)
                 # r_ending()
-
-            # FIXME: Del the nonintersection
 
             temp_hyper = self.__p_bisector(l_cur_point, r_cur_point)
             temp_hyper.sort(reverse=True, key=lambda x: x[1])
