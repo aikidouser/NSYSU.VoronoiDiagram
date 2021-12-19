@@ -246,7 +246,7 @@ class VoronoiDiagram:
         print(f"bisector: {a}, {b} --> {p_bisector}")
         return p_bisector
 
-    def __line_intersection(self, line_a, line_b):
+    def __line_intersection(self, line_a, line_b, h=0):
         if line_a == line_b:
             return None
         geo_line1 = geo.LineString(line_a)
@@ -255,7 +255,7 @@ class VoronoiDiagram:
 
         if geo_line1.intersects(geo_line2):
             intersection = geo_line1.intersection(geo_line2)
-            if(0 <= intersection.x <= 600 and 0 <= intersection.y <= 600):
+            if (0 <= intersection.x <= 600 and 0 <= intersection.y <= 600) or h == 1:
                 print([intersection.x, intersection.y])
                 return [intersection.x, intersection.y]
         print("None")
@@ -280,8 +280,8 @@ class VoronoiDiagram:
         # self.polypoints_list.append([cvhull.upper_tan[0], cvhull.upper_tan[1]])
 
         while l_cur_point != cvhull.lower_tan[0] or r_cur_point != cvhull.lower_tan[1]:
-            l_highest_inters = [0, -1]
-            r_highest_inters = [0, -1]
+            l_highest_inters = [0, -999999999]
+            r_highest_inters = [0, -999999999]
             l_line_ind = None
             r_line_ind = None
             l_line_set = list()
@@ -299,7 +299,7 @@ class VoronoiDiagram:
             for ind in l_line_set:
                 check_line = self.polyedge_list[ind]
                 hyper_inters = self.__line_intersection(
-                    hyperplane[-2:], check_line)
+                    hyperplane[-2:], check_line, h=1)
                 if hyper_inters:
                     if hyper_inters[1] > l_highest_inters[1]:
                         l_highest_inters = hyper_inters.copy()
@@ -310,7 +310,7 @@ class VoronoiDiagram:
             for ind in r_line_set:
                 check_line = self.polyedge_list[ind]
                 hyper_inters = self.__line_intersection(
-                    hyperplane[-2:], check_line)
+                    hyperplane[-2:], check_line, h=1)
                 if hyper_inters:
                     if hyper_inters[1] > r_highest_inters[1]:
                         r_highest_inters = hyper_inters.copy()
