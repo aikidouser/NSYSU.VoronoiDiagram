@@ -159,9 +159,9 @@ class MainWindow:
         tmp_list = [event.x, event.y]
         if tmp_list not in self.point_list:
             self.point_list.append(tmp_list)
-        self.__graph.create_oval(x1, y1, x2, y2, fill='black')
-        self.__graph.create_text(
-            event.x + 10, event.y + 10, text=f"({event.x}, {event.y})")
+            self.__graph.create_oval(x1, y1, x2, y2, fill='black')
+            self.__graph.create_text(
+                event.x + 10, event.y + 10, text=f"({event.x}, {event.y})")
 
     def __next_case(self):
         print(f"case: {self.__case_i}/{len(self.input_case_list)}")
