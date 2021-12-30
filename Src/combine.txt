@@ -1,0 +1,748 @@
+# 學號： M103040027
+# 姓名： 陳冠廷
+# 程式語言： Python3
+
+
+# main.py
+from setWindow import MainWindow
+
+if __name__ == '__main__':
+
+    VDWindow = MainWindow()
+
+    VDWindow.window.mainloop()
+
+
+# setWindow.py
+import random
+import tkinter as tk
+from os import write
+from tkinter import Canvas
+from tkinter import filedialog, messagebox
+from VDAlgo import VoronoiDiagram
+
+
+class MainWindow:
+    def __init__(self):
+        self.window = tk.Tk()
+        self.window.title('Voronoi Diagram')
+        # self.window.geometry('750x650')
+        self.file_path = ""
+        self.point_list = []
+        self.__case_i = 0
+        self.input_case_list = []
+
+        # Step by Step
+        self.__if_finished = False
+        self.__step_i = 0
+        self.__draw_point_set = list()
+        self.__draw_line_set = list()
+        self.__draw_cvhull_set = list()
+        self.__draw_hyper = None
+
+        # basic setting
+        # read file part
+        self.__read_file_frame = tk.Frame(self.window, width=740, height=25)
+        self.__file_path_msg = tk.Text(
+            self.__read_file_frame, width=80, height=1)
+        self.__file_choose_btn = tk.Button(
+            self.__read_file_frame, text='Choose', command=self.__choose_file, width=9)
+        self.__enter_btn = tk.Button(
+            self.__read_file_frame, text='Enter', command=self.__enter_file, width=9)
+
+        # canvas part
+        self.__canvas_frame = tk.Frame(
+            self.window, width=600, height=600, bg='orange')
+        self.__graph = Canvas(self.__canvas_frame,
+                              width=600, height=600, bg='white')
+        self.__graph.bind("<Button-1>", self.__draw_point)
+
+        # exe part
+        self.__output_btn_frame = tk.Frame(self.window, width=130, height=600)
+        self.__next_btn = tk.Button(
+            self.__output_btn_frame, text="Next Case", command=self.__next_case, width=15, height=3)
+        self.__clear_btn = tk.Button(
+            self.__output_btn_frame, text="Clear", command=self.__clear_graph, width=15, height=3)
+        self.__sts_btn = tk.Button(
+            self.__output_btn_frame, text='Step by Step', command=self.__step_by_step, width=15, height=3)
+        self.__run_btn = tk.Button(
+            self.__output_btn_frame, text='Run', command=self.__run_to_end, width=15, height=3)
+        self.__write_btn = tk.Button(
+            self.__output_btn_frame, text='Output Txt', command=self.__output_file, width=15, height=3)
+
+        self.__place_obj()
+
+    def __place_obj(self):
+        pad = 5
+
+        # place the read file part
+        self.__read_file_frame.grid(
+            column=0, row=0, padx=pad, pady=pad, columnspan=2, sticky=tk.W + tk.N)
+        self.__file_path_msg.grid(column=0, row=0, padx=pad, pady=pad)
+        self.__file_choose_btn.grid(column=1, row=0, padx=pad)
+        self.__enter_btn.grid(column=2, row=0, padx=pad)
+
+        self.__file_path_msg.insert('end', 'Please choose a input file')
+
+        # place the canvas part
+        self.__canvas_frame.grid(
+            column=0, row=1, padx=pad, pady=pad, sticky=tk.N)
+        self.__graph.grid(column=0, row=0)
+
+        # place the exe button part
+        self.__output_btn_frame.grid(
+            column=1, row=1, padx=pad, pady=pad, sticky=tk.W + tk.N)
+        self.__next_btn.grid(column=0, row=0, padx=2 * pad, pady=2 * pad)
+        self.__clear_btn.grid(column=0, row=1, padx=2 * pad, pady=2 * pad)
+        self.__sts_btn.grid(column=0, row=2, padx=2 * pad, pady=2 * pad)
+        self.__run_btn.grid(column=0, row=3, padx=2 * pad, pady=2 * pad)
+        self.__write_btn.grid(column=0, row=4, sticky=tk.S,
+                              padx=2 * pad, pady=8 * pad)
+
+    def __choose_file(self):
+        self.__file_path_msg.delete('1.0', 'end')
+        self.file_path = filedialog.askopenfilename()
+        self.__file_path_msg.insert('end', self.file_path)
+
+    def __enter_file(self):
+        self.__case_i = 0
+        if not self.file_path:
+            messagebox.showerror(
+                title="Read File Error", message="Please choose the file.")
+        else:
+            self.__clear_graph()
+            self.input_case_list.clear()
+            if '.txt' in self.file_path:
+                self.__input_preprocess()
+            elif '.out' in self.file_path:
+                self.__output_show_graph()
+            self.file_path = ""
+
+    def __input_preprocess(self):
+        print(self.file_path)
+        point_num = 0
+        with open(self.file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if "#" in line or (len(line) == 1 and line[0] == "\n"):
+                    continue
+                if(len(line.split()) == 1):
+                    point_num = int(line.split()[0])
+                    continue
+                if(point_num):
+                    tmp_list = list()
+                    tmp_list.append(int(line.split()[0]))
+                    tmp_list.append(int(line.split()[1]))
+                    if tmp_list not in self.point_list:
+                        self.point_list.append(tmp_list.copy())
+                    point_num -= 1
+                if(not point_num):
+                    self.input_case_list.append(self.point_list.copy())
+                    self.point_list.clear()
+        self.__point_init()
+        self.__file_path_msg.delete('1.0', 'end')
+        self.__file_path_msg.insert('end', 'File read successfully')
+
+    def __output_show_graph(self):
+        print(self.file_path)
+
+        def draw_point(x, y):
+            x1, y1 = (x - 3), (y - 3)
+            x2, y2 = (x + 3), (y + 3)
+            self.__graph.create_oval(x1, y1, x2, y2, fill='black')
+
+        with open(self.file_path, 'r') as f:
+            for line in f:
+                split_line = line.split()
+                if split_line[0] == 'P':
+                    draw_point(int(split_line[1]), int(split_line[2]))
+                elif split_line[0] == 'E':
+                    temp = list(map(float, split_line[1:]))
+                    self.__graph.create_line(*temp)
+
+    def __point_init(self):
+        self.point_list = self.input_case_list[self.__case_i]
+        print(self.point_list)
+        for point in self.point_list:
+            x1, y1 = (point[0] - 3), (point[1] - 3)
+            x2, y2 = (point[0] + 3), (point[1] + 3)
+            self.__graph.create_oval(x1, y1, x2, y2, fill='black')
+            self.__graph.create_text(
+                point[0] + 10, point[1] + 10, text=f"({point[0]}, {point[1]})")
+
+    def __draw_point(self, event):
+        x1, y1 = (event.x - 3), (event.y - 3)
+        x2, y2 = (event.x + 3), (event.y + 3)
+        tmp_list = [event.x, event.y]
+        if tmp_list not in self.point_list:
+            self.point_list.append(tmp_list)
+            self.__graph.create_oval(x1, y1, x2, y2, fill='black')
+            self.__graph.create_text(
+                event.x + 10, event.y + 10, text=f"({event.x}, {event.y})")
+
+    def __next_case(self):
+        print(f"case: {self.__case_i}/{len(self.input_case_list)}")
+        if len(self.input_case_list):
+            self.__clear_graph()
+            self.__case_i += 1
+            self.__case_i %= len(self.input_case_list)
+            print("test: ", self.input_case_list[self.__case_i])
+            self.__point_init()
+        else:
+            messagebox.showerror(
+                title="Read File Error", message="Please choose the file.")
+
+    def __clear_graph(self):
+        self.point_list.clear()
+        self.__graph.delete('all')
+        self.__if_finished = False
+        self.__step_i = 0
+
+    def __step_by_step(self):
+        # press one time show one step
+        if not self.__if_finished:
+            self.__run()
+            self.__if_finished = True
+
+        # Del the highlight points
+        for point in self.__draw_point_set:
+            self.__graph.delete(point)
+
+        if self.__draw_hyper:
+            self.__graph.delete(self.__draw_hyper)
+
+        self.__draw_point_set.clear()
+        self.__draw_hyper = None
+
+        if self.__step_i >= len(self.vd.record):
+            return
+
+        # Draw new highlight points
+        for point in self.vd.record[self.__step_i]['points']:
+            x1, y1 = (point[0] - 5), (point[1] - 5)
+            x2, y2 = (point[0] + 5), (point[1] + 5)
+            self.__draw_point_set.append(
+                self.__graph.create_oval(x1, y1, x2, y2, fill='red'))
+
+        # Check if I need to del the prev line
+        clean_prev = self.vd.record[self.__step_i]['clean']
+        edge_type = self.vd.record[self.__step_i]['type']
+
+        if self.vd.record[self.__step_i]['edges']:
+            if edge_type == 'n':
+                if clean_prev:
+                    for edge in self.__draw_line_set:
+                        self.__graph.delete(edge)
+                    self.__draw_line_set.clear()
+                for line in self.vd.record[self.__step_i]['edges']:
+                    self.__draw_line_set.append(self.__graph.create_line(line))
+
+            elif edge_type == 'c':
+                if clean_prev:
+                    for cvhull in self.__draw_cvhull_set[-2:]:
+                        self.__graph.delete(cvhull)
+                    del self.__draw_cvhull_set[-2:]
+                temp_edge = self.vd.record[self.__step_i]['edges'] + \
+                    self.vd.record[self.__step_i]['edges'][0]
+                self.__draw_cvhull_set.append(
+                    self.__graph.create_line(
+                        temp_edge, fill="#" + "%06x" % random.randint(1, 16777214)))
+
+            if edge_type == 'h':
+                self.__draw_hyper = self.__graph.create_line(
+                    *self.vd.record[self.__step_i]['edges'], fill="Pink")
+
+        self.__step_i += 1
+
+    def __run_to_end(self):
+        print("the final output")
+        self.__run()
+        self.__step_i = len(self.vd.record)
+
+        for point in self.__draw_point_set:
+            self.__graph.delete(point)
+        if self.__draw_hyper:
+            self.__graph.delete(self.__draw_hyper)
+        for edge in self.__draw_line_set:
+            self.__graph.delete(edge)
+        for cvhull in self.__draw_cvhull_set:
+            self.__graph.delete(cvhull)
+
+        self.__draw_point_set.clear()
+        self.__draw_hyper = None
+        self.__draw_line_set.clear()
+        self.__draw_cvhull_set.clear()
+
+        for line in self.vd.polyedge_list:
+            self.__graph.create_line(*line)
+
+        temp_edge = self.vd.convex_hull_list + self.vd.convex_hull_list[0]
+        self.__graph.create_line(temp_edge, fill="Pink")
+
+    def __run(self):
+        self.vd = VoronoiDiagram(self.point_list)
+        print(self.point_list)
+
+    def __output_file(self):
+        file_path = str(self.__case_i) + '.out'
+        wb_edge = self.vd.polyedge_list.copy()
+        wb_point = sorted(self.point_list)
+
+        for edge in wb_edge:
+            edge.sort()
+        wb_edge.sort()
+
+        with open(file_path, 'w') as f:
+            for point in wb_point:
+                f.write(f'P {point[0]} {point[1]}\n')
+            for edge in wb_edge:
+                f.write(
+                    f'E {edge[0][0]} {edge[0][1]} {edge[1][0]} {edge[1][1]}\n')
+        self.vd.polyedge_list.clear()
+
+
+# VDAlgo.py
+import math
+import copy
+import sys
+from shapely import geometry as geo
+from functools import cmp_to_key
+
+INT_MIN = -sys.maxsize - 1
+
+
+def orientation(p1, p2, p3):
+    val = (float(p2[1] - p1[1]) * (p3[0] - p2[0])) - \
+        (float(p2[0] - p1[0]) * (p3[1] - p2[1]))
+
+    if val > 0:
+        # Clockwise orientation
+        return 1
+
+    elif val < 0:
+        # Counterclockwise orientation
+        return -1
+
+    elif val == 0:
+        # Collinear orientation
+        return 0
+
+
+class ConvexHull:
+    def __init__(self, point_list):
+        self.point_list = point_list
+        self.upper_tan = list()
+        self.lower_tan = list()
+        self.cvhull = list()
+        self.mid_point = [0] * 2
+
+        for point in point_list:
+            self.mid_point[0] += point[0]
+            self.mid_point[1] += point[1]
+        self.mid_point[0] /= len(point_list)
+        self.mid_point[1] /= len(point_list)
+
+        self.brute_cvhull()
+
+    def __clockwise_compare(self, point1, point2):
+        vec_p = [point1[0] - self.mid_point[0], point1[1] - self.mid_point[1]]
+        vec_q = [point2[0] - self.mid_point[0], point2[1] - self.mid_point[1]]
+        val = vec_p[1] * vec_q[0] - vec_q[1] * vec_p[0]
+
+        if val > 0:
+            return 1
+        elif val == 0:
+            return 0
+        elif val < 0:
+            return -1
+
+    # Convex Hull Brute Force
+    def brute_cvhull(self):
+        if len(self.point_list) == 1:
+            self.cvhull.append(self.point_list[0])
+
+        elif len(self.point_list) >= 2:
+            print("convex hull >= 2 point")
+            self.cvhull += self.point_list
+            self.cvhull.sort(key=cmp_to_key(self.__clockwise_compare))
+
+
+def convex_hull_merge(hull_a: ConvexHull, hull_b: ConvexHull) -> ConvexHull:
+    print(f"Start to merge the Convex Hull: {hull_a.cvhull} {hull_b.cvhull}")
+    size_a = len(hull_a.cvhull)
+    size_b = len(hull_b.cvhull)
+    upper_done = False
+    lower_done = False
+    ret_hull = list()
+    ind_a = hull_a.cvhull.index(max(hull_a.cvhull, key=lambda x: x[0]))
+    ind_b = hull_b.cvhull.index(min(hull_b.cvhull, key=lambda x: x[0]))
+
+    # upper tangent
+    upper_a = ind_a
+    upper_b = ind_b
+    while not upper_done:
+        upper_done = True
+        while orientation(hull_b.cvhull[upper_b],
+                          hull_a.cvhull[upper_a], hull_a.cvhull[(upper_a + 1) % size_a]) > 0:
+            upper_a = (upper_a + 1) % size_a
+
+        while orientation(hull_a.cvhull[upper_a],
+                          hull_b.cvhull[upper_b], hull_b.cvhull[(upper_b - 1) % size_b]) < 0:
+            upper_b = (upper_b - 1) % size_b
+            upper_done = False
+
+    hull_a.upper_tan = [hull_b.cvhull[upper_b], hull_a.cvhull[upper_a]]
+    print("hull a upper tangent: ", hull_a.upper_tan)
+
+    # lower tangent
+    lower_a = ind_a
+    lower_b = ind_b
+    while not lower_done:
+        lower_done = True
+        while orientation(hull_a.cvhull[lower_a],
+                          hull_b.cvhull[lower_b], hull_b.cvhull[(lower_b + 1) % size_b]) > 0:
+            lower_b = (lower_b + 1) % size_b
+
+        while orientation(hull_b.cvhull[lower_b],
+                          hull_a.cvhull[lower_a], hull_a.cvhull[(lower_a - 1) % size_a]) < 0:
+            lower_a = (lower_a - 1) % size_a
+            lower_done = False
+
+    hull_a.lower_tan = [hull_a.cvhull[lower_a], hull_b.cvhull[lower_b]]
+    print("hull lower tangent: ", hull_a.lower_tan)
+
+    ind = upper_a
+    ret_hull.append(hull_a.cvhull[ind])
+    while ind != lower_a:
+        ind = (ind + 1) % size_a
+        ret_hull.append(hull_a.cvhull[ind])
+
+    ind = lower_b
+    ret_hull.append(hull_b.cvhull[ind])
+    while(ind != upper_b):
+        ind = (ind + 1) % size_b
+        ret_hull.append(hull_b.cvhull[ind])
+
+    hull_a.cvhull = ret_hull.copy()
+    return hull_a
+
+
+class VoronoiDiagram:
+    def __init__(self, point_list):
+        self.point_list = sorted(point_list)
+        self.record = list()
+        self.polyedge_list = list()     # for final result
+        self.polypoints_list = list()   # for final result
+        self.convex_hull_list = list()
+        self.hyperplane_list = list()
+
+        self.run()
+
+    def run(self, type=0):
+        print("Start:", self.point_list)
+        self.__garbage(self.point_list)
+
+    def __garbage(self, point_list):
+        print("Divided:", point_list)
+        split = int(len(point_list)/2)
+        l_pointlist = point_list[0: split]
+        r_pointlist = point_list[split:]
+
+        # Brute Fore
+        if len(point_list) <= 3:
+            ret_cvhull = ConvexHull(point_list)
+            self.convex_hull_list = (
+                ret_cvhull.cvhull + [ret_cvhull.cvhull[0]]).copy()
+            self.__writeback_record('c', False, point_list)
+            self.__brute_vd(point_list)
+            # ret_cvhull.brute_cvhull()
+
+            return ret_cvhull
+
+        # Get the ret_cvhull from conquer
+        l_cvhull = self.__garbage(l_pointlist)
+        print("finish left:", l_pointlist)
+        r_cvhull = self.__garbage(r_pointlist)
+        print("finish right:", r_pointlist)
+
+        # Merge
+        print(f"Merge: l: {l_pointlist}, r: {r_pointlist}")
+        ret_cvhull = convex_hull_merge(l_cvhull, r_cvhull)
+        self.convex_hull_list = ret_cvhull.cvhull.copy()
+        self.__writeback_record('c', True, point_list)
+
+        # Hyperplane
+        self.__hyperplane(ret_cvhull)
+        self.__writeback_record('h', False, [])
+        self.__writeback_record('n', True, [])
+
+        return ret_cvhull
+
+    def __brute_vd(self, point_list):
+        s_index = 0
+        dis_list = list()
+
+        # 1 point case
+        if len(point_list) == 1:
+            self.__writeback_record('n', False, point_list)
+            return
+
+        # 2 points case
+        elif len(point_list) == 2:
+            p_bisector = self.__p_bisector(*point_list)
+            self.polyedge_list.append(p_bisector)
+            self.polypoints_list.append(point_list)
+            self.__writeback_record('n', False, point_list)
+            return
+
+        # 3 points case
+        for i in range(len(point_list)):
+            dis_list.append(math.dist(point_list[i], point_list[(i+1) % 3]))
+
+        s_index = (dis_list.index(max(dis_list)) + 1) % 3
+        point_list += point_list[:s_index]
+        del point_list[0:s_index]
+
+        # point_list = anti_clockwise(point_list)
+        if orientation(*point_list) == 1:  # if it is clockwise
+            point_list.reverse()
+        l_p_bisector = self.__p_bisector(point_list[0], point_list[1])
+        r_p_bisector = self.__p_bisector(point_list[1], point_list[2])
+        circumcenter = self.__line_intersection(l_p_bisector, r_p_bisector)
+
+        def write_back():
+            self.polyedge_list.append(l_p_bisector)
+            self.polypoints_list.append([point_list[0], point_list[1]])
+            self.polyedge_list.append(r_p_bisector)
+            self.polypoints_list.append([point_list[1], point_list[2]])
+
+        if circumcenter:
+            m_p_bisector = self.__p_bisector(point_list[2], point_list[0])
+
+            l_p_bisector[0] = circumcenter
+            r_p_bisector[0] = circumcenter
+            m_p_bisector[0] = circumcenter
+            write_back()
+            self.polyedge_list.append(m_p_bisector)
+            self.polypoints_list.append([point_list[2], point_list[0]])
+            self.__writeback_record('n', False, point_list)
+
+        else:
+            write_back()
+            self.__writeback_record('n', False, point_list)
+
+        return
+
+    def __p_bisector(self, a, b):
+        p_bisector = list()
+        midpoint = [(a[0] + b[0])/2, (a[1] + b[1])/2]
+        # vector = [a[0] - b[0], a[1] - b[1]]
+        normal_vector = [b[1] - a[1], - (b[0] - a[0])]
+        vector_extend = [i * 600 for i in normal_vector]
+
+        start_p = [midpoint[0] - vector_extend[0],
+                   midpoint[1] - vector_extend[1]]
+        end_p = [midpoint[0] + vector_extend[0],
+                 midpoint[1] + vector_extend[1]]
+        p_bisector = [start_p, end_p]
+
+        print(f"bisector: {a}, {b} --> {p_bisector}")
+        return p_bisector
+
+    def __line_intersection(self, line_a, line_b, h=0):
+        if line_a == line_b:
+            return None
+        geo_line1 = geo.LineString(line_a)
+        geo_line2 = geo.LineString(line_b)
+        print("intersection: ", geo_line1, geo_line2, end=" - ")
+
+        if geo_line1.intersects(geo_line2):
+            intersection = geo_line1.intersection(geo_line2)
+            if (0 <= intersection.x <= 600 and 0 <= intersection.y <= 600) or h == 1:
+                print([intersection.x, intersection.y])
+                return [intersection.x, intersection.y]
+        print("None")
+        return None
+
+    def __hyperplane(self, cvhull: ConvexHull):
+        l_cur_point = list()
+        r_cur_point = list()
+        hyperplane = self.__p_bisector(*cvhull.upper_tan)
+        # Sort by y, make sure the hyperplane can go down
+        hyperplane.sort(reverse=True, key=lambda x: x[1])
+        r_cur_point = cvhull.upper_tan[0].copy()
+        l_cur_point = cvhull.upper_tan[1].copy()
+        l_next_point = list()
+        r_next_point = list()
+        l_prev_checked = -1
+        r_prev_checked = -1
+        temp_polypoint_list = list()
+        temp_polyedge_list = list()
+
+        while l_cur_point != cvhull.lower_tan[0] or r_cur_point != cvhull.lower_tan[1]:
+            l_highest_inters = [0, INT_MIN]
+            r_highest_inters = [0, INT_MIN]
+            l_line_ind = None
+            r_line_ind = None
+            l_line_set = list()
+            r_line_set = list()
+
+            for points in self.polypoints_list:
+                if not points:
+                    continue
+                temp_idx = self.polypoints_list.index(points)
+                if l_cur_point in points and temp_idx != l_prev_checked:
+                    l_line_set.append(temp_idx)
+
+                if r_cur_point in points and temp_idx != r_prev_checked:
+                    r_line_set.append(temp_idx)
+
+            # Find the highest intersection between the hyperplane and the lines beside the point
+            for ind in l_line_set:
+                check_line = self.polyedge_list[ind]
+                hyper_inters = self.__line_intersection(
+                    hyperplane[-2:], check_line, h=1)
+                if hyper_inters:
+                    if hyper_inters[1] > l_highest_inters[1]:
+                        l_highest_inters = hyper_inters.copy()
+                        l_next_point = self.polypoints_list[ind][0].copy() \
+                            if self.polypoints_list[ind][0] != l_cur_point else self.polypoints_list[ind][1].copy()
+                        l_line_ind = ind
+
+            for ind in r_line_set:
+                check_line = self.polyedge_list[ind]
+                hyper_inters = self.__line_intersection(
+                    hyperplane[-2:], check_line, h=1)
+                if hyper_inters:
+                    if hyper_inters[1] > r_highest_inters[1]:
+                        r_highest_inters = hyper_inters.copy()
+                        r_next_point = self.polypoints_list[ind][0].copy() \
+                            if self.polypoints_list[ind][0] != r_cur_point else self.polypoints_list[ind][1]
+                        r_line_ind = ind
+
+            temp_polypoint_list.append([l_cur_point, r_cur_point])
+            hyperplane.pop()
+
+            # Judge the relation between the hyperplane and the lines
+            if l_highest_inters == r_highest_inters:
+                hyperplane.append(l_highest_inters)
+
+                cut_checked = orientation(
+                    hyperplane[-2], hyperplane[-1], self.polyedge_list[l_line_ind][0])
+                if cut_checked == 1:
+                    self.polyedge_list[l_line_ind][1] = l_highest_inters.copy()
+                else:
+                    self.polyedge_list[l_line_ind][0] = l_highest_inters.copy()
+
+                cut_checked = orientation(
+                    hyperplane[-2], hyperplane[-1], self.polyedge_list[r_line_ind][0])
+                if cut_checked == -1:
+                    self.polyedge_list[r_line_ind][1] = r_highest_inters.copy()
+                else:
+                    self.polyedge_list[r_line_ind][0] = r_highest_inters.copy()
+
+                l_cur_point = l_next_point.copy()
+                l_prev_checked = l_line_ind
+                l_line_set.remove(l_line_ind)
+
+                for idx in l_line_set:
+                    checked_s = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][0])
+                    checked_e = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
+                    if checked_s == checked_e and checked_s == -1:
+                        self.polyedge_list[idx] = None
+                        self.polypoints_list[idx] = None
+
+                r_cur_point = r_next_point.copy()
+                r_prev_checked = r_line_ind
+                r_line_set.remove(r_line_ind)
+
+                for idx in r_line_set:
+                    checked_s = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][0])
+                    checked_e = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
+                    if checked_s == checked_e and checked_s == -1:
+                        self.polyedge_list[idx] = None
+                        self.polypoints_list[idx] = None
+
+            elif l_highest_inters[1] > r_highest_inters[1]:
+                hyperplane.append(l_highest_inters)
+
+                cut_checked = orientation(
+                    hyperplane[-2], hyperplane[-1], self.polyedge_list[l_line_ind][0])
+                if cut_checked == 1:
+                    self.polyedge_list[l_line_ind][1] = l_highest_inters.copy()
+                else:
+                    self.polyedge_list[l_line_ind][0] = l_highest_inters.copy()
+
+                l_cur_point = l_next_point.copy()
+                l_prev_checked = l_line_ind
+                r_prev_checked = -1
+                l_line_set.remove(l_line_ind)
+
+                for idx in l_line_set:
+                    checked_s = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][0])
+                    checked_e = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
+                    if checked_s == checked_e and checked_s == -1:
+                        self.polyedge_list[idx] = None
+                        self.polypoints_list[idx] = None
+
+            elif l_highest_inters[1] < r_highest_inters[1]:
+                hyperplane.append(r_highest_inters)
+
+                cut_checked = orientation(
+                    hyperplane[-2], hyperplane[-1], self.polyedge_list[r_line_ind][0])
+                if cut_checked == -1:
+                    self.polyedge_list[r_line_ind][1] = r_highest_inters.copy()
+                else:
+                    self.polyedge_list[r_line_ind][0] = r_highest_inters.copy()
+
+                r_cur_point = r_next_point.copy()
+                l_prev_checked = -1
+                r_prev_checked = r_line_ind
+                r_line_set.remove(r_line_ind)
+
+                for idx in r_line_set:
+                    checked_s = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][0])
+                    checked_e = orientation(
+                        hyperplane[-2], hyperplane[-1], self.polyedge_list[idx][1])
+                    if checked_s == checked_e and checked_s == 1:
+                        self.polyedge_list[idx] = None
+                        self.polypoints_list[idx] = None
+
+            temp_hyper = self.__p_bisector(l_cur_point, r_cur_point)
+            temp_hyper.sort(reverse=True, key=lambda x: x[1])
+            temp_polyedge_list.append(hyperplane[-2:])
+            hyperplane.append(temp_hyper[1])
+
+        self.polypoints_list = [
+            x for x in self.polypoints_list if x is not None]
+        self.polyedge_list = [
+            x for x in self.polyedge_list if x is not None]
+
+        temp_polypoint_list.append([l_cur_point, r_cur_point])
+        temp_polyedge_list.append(hyperplane[-2:])
+        print(f"hyperplane: {hyperplane}")
+        self.hyperplane_list = hyperplane.copy()
+
+        self.polypoints_list += temp_polypoint_list
+        self.polyedge_list += temp_polyedge_list
+
+    def __writeback_record(self, type, clean, points):
+        temp_dict = dict()
+        temp_dict['type'] = type
+        temp_dict['clean'] = clean
+        temp_dict['points'] = points
+
+        if type == 'n':
+            temp_dict['edges'] = copy.deepcopy(self.polyedge_list)
+        elif type == 'c':
+            temp_dict['edges'] = copy.deepcopy(self.convex_hull_list)
+        elif type == 'h':
+            temp_dict['edges'] = copy.deepcopy(self.hyperplane_list)
+
+        self.record.append(temp_dict)
